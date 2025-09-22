@@ -57,6 +57,10 @@
 				color: #000;
 			}
 			
+			b, strong{
+				font-weight: 700;
+			}
+			
 			
 			.id_tags{
 				padding: 2px 4px;
@@ -221,6 +225,9 @@
 				padding: 20px 0px;
 				border-bottom: 1px solid grey;
 			}
+			.grid-collection .item:last-child{
+				border-bottom: none;
+			}
 			.grid-item{
 				position: relative;
 				margin-bottom: 50px;
@@ -369,6 +376,104 @@
 				.achievements-list li {
 				  margin-bottom: 10px;
 			}
+
+			/* Section Separators */
+			.section-separator {
+				display: flex;
+				align-items: center;
+				margin: 60px 0 40px 0;
+				position: relative;
+			}
+
+			.section-separator::before {
+				content: '';
+				flex: 1;
+				height: 2px;
+				background: linear-gradient(90deg, transparent, #92898c, transparent);
+				margin-right: 20px;
+			}
+
+			.section-separator::after {
+				content: '';
+				flex: 1;
+				height: 2px;
+				background: linear-gradient(90deg, transparent, #92898c, transparent);
+				margin-left: 20px;
+			}
+
+			.separator-icon {
+				font-size: 24px;
+				color: #92898c;
+				background: white;
+				padding: 10px;
+				border-radius: 50%;
+				border: 2px solid #92898c;
+				min-width: 50px;
+				text-align: center;
+			}
+
+			/* Animated floating dots separator */
+			.dots-separator {
+				text-align: center;
+				margin: 60px 0 40px 0;
+				position: relative;
+			}
+
+			.dot {
+				display: inline-block;
+				width: 8px;
+				height: 8px;
+				background: #92898c;
+				border-radius: 50%;
+				margin: 0 5px;
+				animation: float 2s ease-in-out infinite;
+			}
+
+			.dot:nth-child(2) {
+				animation-delay: 0.3s;
+			}
+
+			.dot:nth-child(3) {
+				animation-delay: 0.6s;
+			}
+
+			.dot:nth-child(4) {
+				animation-delay: 0.9s;
+			}
+
+			.dot:nth-child(5) {
+				animation-delay: 1.2s;
+			}
+
+			@keyframes float {
+				0%, 100% { transform: translateY(0); }
+				50% { transform: translateY(-10px); }
+			}
+
+			/* Gradient wave separator */
+			.wave-separator {
+				height: 60px;
+				margin: 60px 0 40px 0;
+				background: linear-gradient(45deg, #f0f0f0, #e0e0e0, #f0f0f0);
+				position: relative;
+				overflow: hidden;
+			}
+
+			.wave-separator::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: -100%;
+				width: 200%;
+				height: 100%;
+				background: linear-gradient(90deg, transparent, rgba(146, 137, 140, 0.3), transparent);
+				animation: wave 3s linear infinite;
+			}
+
+			@keyframes wave {
+				0% { left: -100%; }
+				100% { left: 100%; }
+			}
 		</style>
 	</head>
 
@@ -380,10 +485,13 @@
 		</div> -->
 		<div class="scroll-menu">
 			<a href="#about" class="scroll-links">About</a>
-			<!-- <a href="#publications" class="scroll-links">Publications</a> -->
+			<a href="#education" class="scroll-links">Education</a>
 			<a href="#Research" class="scroll-links">Research</a>
 			<a href="#Work_Exp" class="scroll-links">Work Exp</a>
-			<a href="#education" class="scroll-links">Education</a>
+			<a href="#skills" class="scroll-links">Tools</a>
+			<a href="#blogs" class="scroll-links">Blogs</a>
+			<a href="#projects" class="scroll-links">Projects</a>
+			<a href="#achievements-title" class="scroll-links">Achievements</a>
 			<a href="#contact" class="scroll-links last-link">Contact</a>
 		</div>
 
@@ -415,133 +523,392 @@
 				<h1 class="heading" id="about" name="about">About me</h1>
 				<div class="about-me-container">
 				  <p>
-					Passionate about the broader field of Computer Science, with a special focus on AI/ML, Reinforcement
-					Learning, Computer Vision and Natural Language Processing. I have honed my expertise through hands-on
-					projects and by diligently referencing documentation, which has enabled me to become proficient in working
-					with various APIs and frameworks. Currently, I am actively seeking summer internships or research
-					opportunities to further enhance my knowledge and contribute to cutting-edge advancements in these fields.
+					I am a <b>graduate student</b> at <b>UT Austin</b> working on <b>Computer Vision and Stochastic Reinforcement Learning</b>, 
+					advised by <b>Dr. Chandrajit Bajaj</b>. My research focuses on using <b>stochastic reinforcement learning</b> for 
+					<b>time-dependent vision tasks</b>, replacing deep learning where data is limited. I have a strong research background 
+					around <b>pose estimation domain</b> and stay up to date in this field. Along with my research, I have <b>industry experience</b> 
+					from internships at <b>Dell</b> during my undergrad studies. While interested in <b>GPU optimization</b>, I am still building 
+					hands-on experience. I am currently seeking <b>internship opportunities</b> to grow my skills and make an impact.
 				  </p>
 				  <img src="images/me.jpg" alt="Thribhuvan Rapolu" class="about-me-image">
 			  
 				</div>
 <!----------------------------------------------------ABOUT-ME END--------------------------------------------------------------------------------------->
-<!----------------------------------------------------PROJECTS START---------------------------------------------------------------------------------------->	
 
-<h1 class="heading" id="Research" name="projectsml">Current Research</h1>
-<section class="grid-collection">
-	
-	<!--Project 1: START-->
-	<div class="item">
-		<div class="project-title">Pose Estimation and Tracking from Video</div>
-		<div><code class="id_tags">Computer Vision</code> <code class="id_tags">Reinforcement Learning</code></div>
-		
-		<div class="project-description">
-			<ul class="list">
-				<li>Working on Physics Inspired Neural Networks to learn the dynamics of Human Pose</li>
-				<li>Developing a multi-model architecture where each model specializes in different aspects of human kinematic
-					movement, using inter-model corrections to improve pose estimation accuracy and reduce tracking errors.</li>
-				<li>Integrating Reinforcement Learning framework to adapt to dynamic movements and enhance tracking precision
-					in non-stationary conditions across video sequences.</li>
-			  </ul>
-
-		</div>
-		<!-- <div class="project-links">
-			<a href="https://github.com/rajesh-iiith/CarND-DeepLearning-ComputerVision/blob/master/CarND-Behavioral-Cloning-P3/writeup_template.md" target="_blank">Report</a>; 
-			<a href="https://github.com/rajesh-iiith/CarND-DeepLearning-ComputerVision/tree/master/CarND-Behavioral-Cloning-P3" target="_blank">Code</a>
-		</div> -->
-	</div>
-	<!--Project 1: END-->
-	
-	
-</section>
-<!----------------------------------------------------PROJECTS END---------------------------------------------------------------------------------------->				
-
-
-<!----------------------------------------------------Work Experience START---------------------------------------------------------------------------------------->	
-
-<h1 class="heading" id="Work_Exp" name="projectsml">Work Experience</h1>
-<section class="grid-collection">
-	
-	<!--Project 1: START-->
-	<div class="item">
-		<div class="project-title">Dell Technologies</div>
-		<div>Intern</div>
-		
-		<div class="project-description">
-			<ul class="list">
-			<li>Tools & technologies used: Python, Pandas, Langchain, Postgres, MongoDB, GitLab, CI/CD</li>
-			<li>Implemented semantic-based routing and text-image responses in a RAG chatbot using vector embeddings.</li>
-			<li>Built CI/CD pipeline for MongoDB || Explored fine-tuning LLM models</li>
-			</ul>
-		</div>
-		<div class="project-links">
-			<a href="https://tinyurl.com/mu6ef67f" target="_blank">For more insights</a> <whitespace> || <whitespace>
-			<a href="https://drive.google.com/file/d/1lA6CZ_83G96B3Ic7TvtqIw0euzSMbV8U/view?usp=sharing" target="_blank">Internship Certificate</a>
-		</div>
-	</div>
-	<!--Project 1: END-->
-	
-	<!--Project 2: START-->
-	<div class="item">
-		<div class="project-title">FaceIntel Technologies</div>
-		<div>Intern</div>
-		<div class="project-description">
-			<ul class="list">
-				<li>Tools & technologies used: Python, Pandas, HTML, CSS, Javascript</li>
-				<li>Analyzed data from Excel files to extract meaningful insights, identifying key trends and patterns and used them
-					to create a detailed web dashboard.</li>
-			</ul>
-		</div>
-	</div>
-	<!--Project 2: END-->
-
-</section>
-<!----------------------------------------------------PROJECTS END---------------------------------------------------------------------------------------->				
+<!-- Education Separator -->
+<div class="section-separator">
+	<div class="separator-icon">🎓</div>
+</div>
 
 <!----------------------------------------------------EDUCATION START--------------------------------------------------------------------------------------->				
 <h1 class="heading" id="education" name="education">Education</h1>
 			
 				
 <div class="item">
-	<div class="project-title">B.Tech, Computer Science And Engineering </div>
-	<div class="paper-detail"><b>School/College:</b> Mahindra University</div>
-	<div class="paper-detail"><b>CGPA:</b> 8.71</div>
-	<div class="paper-detail"><b>Duration:</b> 2021-2025</div>
-	<div class="paper-detail"><b>Relavant Course Work:</b> Reinforcement Learning, Machine Learning, Control Systems, Digital Image Processing</div>
-
+	<div class="project-title"><b>MS in Computer Science</b></div>
+	<div class="paper-detail"><b>School/College:</b> <b>The University of Texas at Austin</b></div>
+	<div class="paper-detail"><b>Duration:</b> <b>Aug 2025 – May 2027</b></div>
+	<div class="paper-detail"><b>Relevant Coursework:</b> <b>Predictive Machine Learning</b> (Prof. Chandrajit Bajaj), <b>Generative Visual Computing</b> (Prof. Qixing Huang)</div>
 </div>
-<!----------------------------------------------------EDUCATION END--------------------------------------------------------------------------------------->	
+
+<div class="item">
+	<div class="project-title"><b>B.Tech in Computer Science</b></div>
+	<div class="paper-detail"><b>School/College:</b> <b>Mahindra University</b></div>
+	<div class="paper-detail"><b>CGPA:</b> <b>8.96/10</b></div>
+	<div class="paper-detail"><b>Duration:</b> <b>Jul 2021 – May 2025</b></div>
+	<div class="paper-detail"><b>Relevant Coursework:</b> <b>High Performance Computing</b>, <b>Reinforcement Learning</b>, <b>Machine Learning</b>, <b>Control Systems</b></div>
+</div>
+<!----------------------------------------------------EDUCATION END--------------------------------------------------------------------------------------->
+
+<!-- Research Separator -->
+<div class="section-separator">
+	<div class="separator-icon">🔬</div>
+</div>
+
+<!----------------------------------------------------RESEARCH START---------------------------------------------------------------------------------------->	
+
+<h1 class="heading" id="Research" name="Research">Current Research</h1>
+<section class="grid-collection">
+	
+	<!--Research 1: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/thribhuvanrapolu/3D-Pose-Estimation-Using-DNBP" target="_blank">Hamiltonian Non-Parametric Belief Propagation for Pose Estimation and Tracking</a></div>
+		<div><code class="id_tags">Computer Vision</code> <code class="id_tags">Machine Learning</code> <code class="id_tags">Stochastic Reinforcement Learning</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li>Working on a <b>research paper</b> "<b>Hamiltonian Non-Parametric Belief Propagation For Pose Estimation And Tracking</b>" under <b>Prof. Chandrajit Bajaj</b></li>
+				<li>Implementing <b>Differential Non Parametric Belief Propagation (DNBP)</b> for tracking humans in <b>3D</b>, extending prior applications from simple pendulum and spider environments to <b>complex human motion</b></li>
+				<li>Currently developing <b>Stochastic RL solution</b> as part of ongoing research</li>
+				<li>Helping Professor on a book "<b>Learning Hamiltonians, Through Manifold Optimization and Generalized Flows</b>"</li>
+			  </ul>
+
+		</div>
+	</div>
+	<!--Research 1: END-->
+	
+	
+	
+</section>
+<!----------------------------------------------------RESEARCH END---------------------------------------------------------------------------------------->				
+
+<!-- Work Experience Separator -->
+<div class="section-separator">
+	<div class="separator-icon">💼</div>
+</div>
+
+<!----------------------------------------------------Work Experience START---------------------------------------------------------------------------------------->	
+
+<h1 class="heading" id="Work_Exp" name="Work_Exp">Work Experience</h1>
+<section class="grid-collection">
+	
+	<!--Experience 1: START-->
+	<div class="item">
+		<div class="project-title">University of Texas at Austin</div>
+		<div>Research Assistant (Prof. Chandrajit Bajaj) | Mar 2024 – Present</div>
+		
+		<div class="project-description">
+			<ul class="list">
+			<li>Working on a <b>research paper</b> "<b>Hamiltonian Non-Parametric Belief Propagation For Pose Estimation And Tracking</b>"</li>
+			<li>Helping Professor on a book "<b>Learning Hamiltonians, Through Manifold Optimization and Generalized Flows</b>"</li>
+			<li>Implementing <b>Differential Non Parametric Belief Propagation (DNBP)</b> for <b>human pose estimation and tracking</b></li>
+			</ul>
+		</div>
+	</div>
+	<!--Experience 1: END-->
+	
+	<!--Experience 2: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://drive.google.com/file/d/14V7xqpBZozKLH3liPow7JGFWQfLWU3cx/view?usp=sharing" target="_blank">Dell Technologies</a></div>
+		<div>Winter Intern (Manufacturing Team) | Feb 2025 – May 2025</div>
+		<div class="project-description">
+			<ul class="list">
+				<li>Built a <b>PLC Dashboard</b> in <b>Power BI</b>, processing <b>1M+ trace logs</b> into insights and integrating <b>AI for advanced analytics</b></li>
+				<li>Developed an <b>Angular + .NET application</b> for order preprocessing with <b>unified backend–frontend deployment</b> on <b>KOB</b></li>
+				<li>Supported the <b>Production Planning Engine</b> with <b>Pytest automation</b> and <b>data visualizations (plotly)</b></li>
+			</ul>
+		</div>
+	</div>
+	<!--Experience 2: END-->
+	
+	<!--Experience 3: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://drive.google.com/file/d/1lA6CZ_83G96B3Ic7TvtqIw0euzSMbV8U/view?usp=sharing" target="_blank">Dell Technologies</a></div>
+		<div>Project Intern (DevOps Support Team) | Jun 2024 - Aug 2024</div>
+		<div class="project-description">
+			<ul class="list">
+				<li>Implemented <b>semantic-based routing</b> and <b>text-image responses chatbot</b> using <b>RAG</b> for entire <b>Dell Confluence Docs</b></li>
+				<li>Built <b>CI/CD pipeline</b> for <b>MongoDB</b>. Explored <b>fine-tuning LLM models</b> as <b>POC</b></li>
+				<li><b>Tools & technologies used:</b> <b>Python</b>, <b>Pandas</b>, <b>Langchain</b>, <b>Postgres</b>, <b>MongoDB</b>, <b>GitLab</b>, <b>CI/CD</b></li>
+			</ul>
+		</div>
+		<div class="project-links">
+			<a href="https://tinyurl.com/mu6ef67f" target="_blank">For more insights</a> || 
+			<a href="https://drive.google.com/file/d/1lA6CZ_83G96B3Ic7TvtqIw0euzSMbV8U/view?usp=sharing" target="_blank">Internship Certificate</a>
+		</div>
+	</div>
+	<!--Experience 3: END-->
+	
+	<!--Experience 4: START-->
+	<div class="item">
+		<div class="project-title">FaceIntel Technologies</div>
+		<div>Intern | Jan 2024 - Mar 2024</div>
+		<div class="project-description">
+			<ul class="list">
+				<li><b>Tools & technologies used:</b> <b>Python</b>, <b>Pandas</b>, <b>HTML</b>, <b>CSS</b>, <b>Javascript</b></li>
+				<li>Analyzed data from <b>Excel files</b> to extract <b>meaningful insights</b>, identifying <b>key trends and patterns</b> and used them
+					to create a <b>detailed web dashboard</b>.</li>
+			</ul>
+		</div>
+	</div>
+	<!--Experience 4: END-->
+
+</section>
+<!----------------------------------------------------Work Experience END---------------------------------------------------------------------------------------->				
+
+<!-- Tools Separator -->
+<div class="section-separator">
+	<div class="separator-icon">🛠️</div>
+</div>
+
+<!----------------------------------------------------TOOLS START---------------------------------------------------------------------------------------->				
+			<h1 class="heading" id="skills" name="skills">Tools</h1>
+			<div class="item">
+					<div class="paper-detail"><b>Frameworks/Tools:</b> Stable-Baselines3, OpenAI Gym, PyTorch, Jax, Scikit-Learn, Tensorflow, Plotly, Matplotlib, NetworkX, Beautiful Soup, Selenium, Pandas, Numpy, Langchain, OpenCV, Flask, CUDA C++, Git, Docker, SQL, Android Studio, UNIX</div>
+					<div class="paper-detail"><b>Certifications:</b> <a href="https://www.udemy.com/certificate/UC-5722d7ae-8107-43f6-8b35-bfac31743a3f" target="_blank">Machine Learning A-Z</a>, <a href="https://www.udemy.com/certificate/UC-fa947f06-ec2d-4259-8ebd-f361b6b534fb" target="_blank">Tensorflow Developer</a>, <a href="https://coursera.org/share/5d5cd3348d34f9d9e8ec432655c04305" target="_blank">Sequence Models</a>, <a href="https://coursera.org/share/467d0c23cbd58b1102444a62dea8356e" target="_blank">Convolution Neural Network</a></div>
+				</div>
+
+<!----------------------------------------------------TOOLS END---------------------------------------------------------------------------------------->				
+
+<!-- Blogs Separator -->
+<div class="section-separator">
+	<div class="separator-icon">📝</div>
+</div>
+
+<!----------------------------------------------------BLOGS START---------------------------------------------------------------------------------------->
+
+	<h1 class="heading" id="blogs" name="blogs">Blogs</h1>
+	<p>These are my notes that I wrote for summarizing papers and code.</p>
+	<ul class="achievements-list">
+		<li><a href="https://hackmd.io/@ThribhuvanR/Sy4szSCogg" target="_blank"><b>PHALP-4D Humans WorkFlow</b></a></li>
+		<li><a href="https://hackmd.io/@ThribhuvanR/ry6fmS0igg" target="_blank"><b>HMR2.0 with code</b></a></li>
+		<li><a href="https://hackmd.io/@ThribhuvanR/HJNSEr0iel" target="_blank"><b>4D Humans Paper</b></a></li>
+		<li><a href="https://hackmd.io/@ThribhuvanR/By7YEBRoxl" target="_blank"><b>4D Humans Code</b></a></li>
+		<li><a href="https://hackmd.io/@ThribhuvanR/B10O8B0sgx" target="_blank"><b>DNBP Simplified</b></a></li>
+		<li><a href="https://hackmd.io/@ThribhuvanR/Bkv6UrCieg" target="_blank"><b>Multi Term Adam Explained</b></a></li>
+		<li><a href="https://hackmd.io/@ThribhuvanR/ryGHwH0ieg" target="_blank"><b>DNBP Loss Backpropagation</b></a></li>
+		<li><a href="https://drive.google.com/file/d/1JZAFYaVEd4jA4zjB9Cw8DM_bqRJR1EqT/view?usp=sharing" target="_blank"><b>Survey around 3D Human Pose estimation and tracking</b></a></li>
+	</ul>
+
+<!----------------------------------------------------BLOGS END---------------------------------------------------------------------------------------->
+
+<!-- Projects Separator -->
+<div class="section-separator">
+	<div class="separator-icon">🚀</div>
+</div>
+
+<!----------------------------------------------------SELECTED PROJECTS START---------------------------------------------------------------------------------------->
+<h1 class="heading" id="projects" name="projects">Projects</h1>
+<section class="grid-collection">
+	
+	<!-- Project 1: START-->
+	<!-- <div class="item">
+		<div class="project-title"><a href="https://drive.google.com/drive/folders/1a1hXB3JYhMorwg5DuOYpQdUOErL9i-li?usp=sharing" target="_blank">Model Based Learning for Drone Navigation</a></div>
+		<div><code class="id_tags">Reinforcement Learning</code> <code class="id_tags">Robotics</code> <code class="id_tags">Computer Vision</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li>Developed a custom <b>OpenAI Gym Environment</b> for <b>drone navigation</b> under <b>multiple radars and terrains</b></li>
+				<li>Trained <b>Model-free RL Model</b> (<b>Hindsight Experience Replay (HER)</b>) using <b>Stable-Baselines3</b></li>
+				<li>Currently developing a <b>VAE-based control policies solution</b> for <b>faster training</b></li>
+			  </ul>
+		</div>
+	</div> -->
+	<!--Project 1: END -->
+	
+	<!--Project 2: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/thribhuvanrapolu/Product-entity-extractor-from-images" target="_blank">Product Entities Extractor from Images</a></div>
+		<div><code class="id_tags">Computer Vision</code> <code class="id_tags">Deep Learning</code> <code class="id_tags">Transformers</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li>For the <b>Amazon ML Hackathon</b>, trained a <b>Donut Transformer</b> on a <b>custom image dataset</b></li>
+				<li>Automatically identifies <b>product entities and their values</b> without specifying entity type</li>
+				<li>Implemented <b>end-to-end document understanding pipeline</b> for <b>product information extraction</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 1: END-->
+	
+	<!--Project 3: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/thribhuvanrapolu/Optimal-Control-and-Estimation-under-Communication-Constraints-using-RL" target="_blank">Optimal Control and Estimation under Communication Constraints using RL</a></div>
+		<div><code class="id_tags">Reinforcement Learning</code> <code class="id_tags">Control Systems</code> <code class="id_tags">DDPG</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li>Explored <b>optimal control</b> in <b>low-bandwidth settings</b> by building <b>estimators for signal recovery and real-time scheduling</b></li>
+				<li>Used <b>DDPG</b> to address challenges in <b>data reconstruction and transmission</b></li>
+				<li>Developed <b>robust control policies</b> for <b>communication-constrained environments</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 2: END-->
+	
+	<!--Project 4: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://drive.google.com/drive/folders/1ECpLWiu9SY5M1JP0OJNQElHPXKMYkkqu?usp=sharing" target="_blank">AI-Assisted Learning for NVIDIA SDKs and Toolkits</a></div>
+		<div><code class="id_tags">NLP</code> <code class="id_tags">RAG</code> <code class="id_tags">LLM</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li>Developed an <b>RAG-based LLM model</b> using <b>pre-trained Llama-2 model</b> with <b>Langchain</b></li>
+				<li>Applied to entire <b>NVIDIA documentation</b> gathered using <b>Beautiful Soup web scraping techniques</b></li>
+				<li>Created <b>intelligent assistant</b> for <b>NVIDIA SDK and toolkit learning</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 3: END-->
+	
+	<!--Project 5: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://drive.google.com/drive/folders/1NV8_Lp-rs_8fS2dZRkoky24AOjRCZxi3?usp=sharing" target="_blank">Leveraging Local Node Features for Network Clustering and Analysis</a></div>
+		<div><code class="id_tags">Machine Learning</code> <code class="id_tags">Graph Theory</code> <code class="id_tags">Network Analysis</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li>Identified and grouped <b>nodes within graphs</b> through <b>machine learning</b> that share <b>common structural characteristics</b></li>
+				<li>Revealed <b>clusters of individuals</b> with <b>similar traits or interests</b></li>
+				<li>Applied <b>graph neural networks</b> for <b>community detection and network analysis</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 4: END-->
+	
+	<!--Project 6: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/thribhuvanrapolu/MultiMedia-Sleep-Timer" target="_blank">MultiMedia Sleep Timer Android App</a></div>
+		<div><code class="id_tags">Android Development</code> <code class="id_tags">Kotlin</code> <code class="id_tags">Mobile App</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li><b>Countdown timer app</b> that pauses <b>video/audio playback</b> and <b>locks screen</b> when timer stops</li>
+				<li>Developed in <b>Kotlin</b> with focus on <b>user experience and system integration</b></li>
+				<li>Implemented <b>media control and system lock functionality</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 6: END-->
+	
+	<!--Project 7: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/thribhuvanrapolu/Take-A-Break-While-Working" target="_blank">Intimate User to take a break while working</a></div>
+		<div><code class="id_tags">Computer Vision</code> <code class="id_tags">Desktop App</code> <code class="id_tags">OpenCV</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li><b>Tools & technologies used:</b> <b>Python</b>, <b>OpenCV</b>, <b>dlib</b>, <b>PushOver API</b></li>
+				<li>Notifies user to take a break while working if time limit exceeds for more than <b>20 minutes</b> and many more features like <b>screen distance</b> and <b>drowsiness detection</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 7: END-->
+	
+	<!--Project 8: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/shubh220922/Aether-Hackathon-Project/tree/main" target="_blank">Integrating ChatGPT with Location based-API</a></div>
+		<div><code class="id_tags">Web Application</code> <code class="id_tags">ChatGPT</code> <code class="id_tags">API Integration</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li><b>Tools & technologies used:</b> <b>Javascript</b>, <b>Openstreetmap API</b></li>
+				<li>A <b>ChatGPT based web application</b> that helps the user with their <b>tour plan</b></li>
+				<li>Users can interact with <b>ChatGPT</b> to inquire about <b>tour plans</b>, and it will provide suggestions for locations on a map</li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 8: END-->
+	
+	<!--Project 9: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/Baka-14/Menu_Bot" target="_blank">Mess Bot</a></div>
+		<div><code class="id_tags">Discord Bot</code> <code class="id_tags">Automation</code> <code class="id_tags">Python</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li><b>Tools & technologies used:</b> <b>Pandas</b>, <b>Hikari-Lightbulb</b>, <b>Google API</b></li>
+				<li>A bot for my university that automatically accesses the <b>mess menu file</b> and pings everyone in the server <b>30 minutes before</b> breakfast, lunch, snacks, and dinner to notify them of the meal options</li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 9: END-->
+	
+	<!--Project 10: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/thribhuvanrapolu/Moodle-Discord" target="_blank">Moodle-Discord Authentication</a></div>
+		<div><code class="id_tags">Discord Bot</code> <code class="id_tags">Authentication</code> <code class="id_tags">University Integration</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li><b>Tools & technologies used:</b> <b>Pycord</b>, <b>PHP</b>, <b>SQL</b>, <b>Python</b></li>
+				<li>Configuring <b>Discord as a communication platform</b> for a university, ensuring that only <b>authorized individuals</b> can access <b>course-specific Discord servers</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 10: END-->
+	
+	<!--Project 11: START-->
+	<div class="item">
+		<div class="project-title"><a href="https://github.com/thribhuvanrapolu/Auto-Downloads-Manager" target="_blank">Auto Downloads Manager</a></div>
+		<div><code class="id_tags">File Manager</code> <code class="id_tags">Automation</code> <code class="id_tags">Python</code></div>
+		
+		<div class="project-description">
+			<ul class="list">
+				<li><b>Tools & technologies used:</b> <b>Watchdog</b></li>
+				<li>Automatically moves files downloaded from <b>downloads folder</b> to <b>Pictures</b> or <b>Videos</b> or <b>Documents</b> folder based on <b>file type</b></li>
+			  </ul>
+		</div>
+	</div>
+	<!--Project 11: END-->
+	
+</section>
+<!----------------------------------------------------SELECTED PROJECTS END---------------------------------------------------------------------------------------->
+
+<!-- Achievements Separator -->
+<div class="section-separator">
+	<div class="separator-icon">🏆</div>
+</div>
+
+<!----------------------------------------------------ACHIEVEMENTS START---------------------------------------------------------------------------------------->
 
 
 
 	<h1 class="heading" id="achievements-title">Achievements</h1>
 	<ul class="achievements-list">
-	  <li><b>Scholarship</b> of ₹1,00,000 for exceptional academic performance by Mahindra University. Nov 2024</li>
-	  <li><b>The Mirai CTF:</b> Achieved 2nd place in a Capture The Flag (CTF) Cybersecurity challenge.Apr 2024</li>
-	  <li><b>Data Challenge:</b> Secured 3rd place for implementing an ML solution on a provided dataset. Apr 2024</li>
-	  <li><b>Scholarship</b> of ₹1,00,000 for exceptional academic performance by Mahindra University. Oct 2023</li>
-	  <li><b>Dell Hackathon:</b> 2nd Winners for working on intimate user to take a break while working. Oct 2023</li>
-	  <li><b>Data Challenge:</b> Secured 3rd place for implementing an ML solution on a provided dataset. Apr 2023</li>
-	  <li><b>The 418 Hackathon:</b> 1st place for integrating ChatGPT with a location-based API. Apr 2023</li>
-	  <li><b>The Mirai CTF:</b> 3rd place in a Capture The Flag (CTF) Cybersecurity challenge. Apr 2023</li>
-	  <li><b>Technomania:</b> 2nd place in challenges based on Competitive Coding (DSA). Feb 2023</li>
+	  <li><a href="https://drive.google.com/file/d/17bU2SPJIKPPCQOkCRqnjXoPH4uWYX0Bo/view?usp=sharing" target="_blank"><b>Scholarship</b></a> of <b>$1,000</b> for <b>exceptional academic performance</b> by <b>Mahindra University</b>. <b>Oct 2023 & Nov 2024</b></li>
+	  <li><a href="https://drive.google.com/file/d/1d2KYNMNsG5FwsyETko-eB1Kaq6nYrN4i/view?usp=sharing" target="_blank"><b>The Mirai CTF:</b></a> Achieved <b>2nd place</b> in a <b>Capture The Flag (CTF) Cybersecurity challenge</b>. <b>Apr 2024</b></li>
+	  <li><a href="https://drive.google.com/file/d/1T4QgeMhrSzUCBTXUv5z6rjsU-rzfPejg/view?usp=sharing" target="_blank"><b>Data Challenge:</b></a> Secured <b>3rd place</b> for implementing an <b>ML solution</b> on a provided dataset. <b>Apr 2024</b></li>
+	  <li><b>Dell Hackathon:</b> <b>2nd Winners</b> for working on intimate user to take a break while working. <b>Oct 2023</b></li>
+	  <li><b>The Mirai CTF:</b> <b>3rd place</b> in a <b>Capture The Flag (CTF) Cybersecurity challenge</b>. <b>Apr 2023</b></li>
+	  <li><b>Data Challenge:</b> Secured <b>3rd place</b> for implementing an <b>ML solution</b> on a provided dataset. <b>Apr 2023</b></li>
+	  <li><b>The 418 Hackathon:</b> <b>1st place</b> for integrating <b>ChatGPT</b> with a <b>location-based API</b>. <b>Apr 2023</b></li>
+	  <li><b>Technomania:</b> <b>2nd place</b> in challenges based on <b>Competitive Coding (DSA)</b>. <b>Feb 2023</b></li>
 	</ul>
-<!----------------------------------------------------SKILLS START---------------------------------------------------------------------------------------->				
-			<!-- <h1 class="heading" id="skills" name="skills">Skills</h1>
-			<div class="item">
-					<div class="paper-detail"><b>Category 1:</b> alpha, beta, gamma</div>
-					<div class="paper-detail"><b>Category 2:</b> alpha, beta, gamma</div>
-					<div class="paper-detail"><b>Category 3:</b> alpha, beta, gamma</div>
-				</div> -->
 
-<!----------------------------------------------------SKILLS END---------------------------------------------------------------------------------------->			
+<!-- Contact Separator -->
+<div class="section-separator">
+	<div class="separator-icon">📞</div>
+</div>
 
 			<h1 class="heading" id="contact" name="contact">Contact</h1>
 			<p class="contacts">
 				<div>
-					<a href="mailto:thribhuvanrapolu5@gmail.com">Email me</a>
-					<a href="https://github.com/thribhuvanrapolu" target="_blank">Github</a>
+					<a href="mailto:thribhuvan.rapolu@utexas.edu">Email me: thribhuvan.rapolu@utexas.edu</a><br>
+					<a href="tel:+17373635824">+1 (737) 363-5824</a><br>
+					<a href="https://github.com/thribhuvanrapolu" target="_blank">Github</a><br>
 					<a href="https://www.linkedin.com/in/thribhuvan-rapolu-aaa632235/" target="_blank">LinkedIn</a>
+					<!-- <a href="https://thribhuvanrapolu.github.io" target="_blank">Blogs</a> -->
 				</div>
 			</p>
 		</section>
@@ -549,6 +916,16 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
     <script src="./assets/thirdparty/scrollTo.min.js"></script>
 	<script>
-		$('.scroll-links').scrollTo();
+		$(document).ready(function() {
+			$('.scroll-links').click(function(e) {
+				e.preventDefault();
+				var target = $(this).attr('href');
+				if ($(target).length) {
+					$('html, body').animate({
+						scrollTop: $(target).offset().top - 50
+					}, 800);
+				}
+			});
+		});
 	</script>
 </html>
