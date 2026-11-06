@@ -1,0 +1,387 @@
+<!doctype html>
+<!--
+  LieSPHGP project page (thribhuvanrapolu.github.io/liesphgp). Sources in github.com/CVC-Lab/LieSPHGP:
+    media/teaser.{mp4,png}, overview.png (= overview_paper.png), control_loop.png
+        <- paper_results/website/  (src/utils/teaser_video.py; overview: --overview-paper)
+    media/pendulum_prediction.png (= pendulum_prediction_nn_gap.png), rov_prediction.png
+        <- paper_todo/figures/prediction/  (paper_todo/figures/make_prediction_figures.py)
+    media/closed_loop.png, se3-quadrotor-closed-loop.png  <- paper_todo/figures/
+    media/quadrotor_viz.png, rov_viz.png  <- paper_todo/figures/systems/ (make_system_figures.py)
+    explorer.html + data/{pendulum,quadrotor}.json  <- paper_results/website/liesphgp.html + data/ (comparison/web_export.py)
+    media/pendulum_viz.png  <- the paper's Figure 8 (img/3d_pend/3d_pend_viz.pdf), cut from the rendered paper PDF at 400 dpi
+  PNGs wider than 2400 px were downscaled to 2400 px.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LieSPHGP</title>
+<meta name="description" content="LieSPHGP: Stochastic Port-Hamiltonian Gaussian Processes for Learning from Noisy Dynamics on Lie Groups. Project page with paper, code, videos and interactive results.">
+<meta property="og:title" content="LieSPHGP: Stochastic Port-Hamiltonian Gaussian Processes on Lie Groups">
+<meta property="og:description" content="Learning rigid-body dynamics on SO(3) and SE(3) from noisy data, with physical structure, calibrated uncertainty, and model-based control.">
+<meta property="og:image" content="https://thribhuvanrapolu.github.io/liesphgp/media/teaser.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});"></script>
+<style>
+:root {
+  color-scheme: light;        /* white page in every browser theme (user, 6 Nov 2026) */
+  --bg: #ffffff;
+  --surface: #f6f8fb;
+  --border: #dde3ea;
+  --text: #17202a;
+  --muted: #55636f;
+  --accent: #e07800;          /* LieSPHGP orange, as in the paper's figures */
+  --accent-soft: #fff3e3;
+  --link: #0b5cad;
+  --code-bg: #f3f5f8;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", Georgia, serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --wide: 1080px;
+  --narrow: 820px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--serif); font-size: 18px; line-height: 1.65; }
+a { color: var(--link); }
+img, video { max-width: 100%; display: block; }
+.wrap { max-width: var(--wide); margin: 0 auto; padding: 0 16px; }
+.narrow { max-width: var(--narrow); margin: 0 auto; }
+h1, h2, h3 { font-family: var(--sans); line-height: 1.25; text-wrap: balance; }
+h2 { font-size: 1.6rem; margin: 0 0 0.5em; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; margin: 2em 0 0.5em; }
+section { padding: 56px 0; border-top: 1px solid var(--border); }
+p { margin: 0 0 1em; }
+
+/* hero */
+header.hero { text-align: center; padding: 64px 0 32px; }
+.hero h1 { font-size: clamp(1.7rem, 4vw, 2.6rem); margin: 0 auto 0.5em; max-width: 900px; letter-spacing: -0.02em; }
+.hero h1 .name { color: var(--accent); }
+.authors { font-family: var(--sans); font-size: 1.1rem; margin: 0 0 0.3em; }
+.authors span { margin: 0 0.6em; white-space: nowrap; }
+.affils { font-family: var(--sans); font-size: 0.9rem; color: var(--muted); margin: 0 0 1.6em; }
+.affils span { display: inline-block; margin: 0 0.6em; }
+.buttons { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.btn { font-family: var(--sans); font-size: 0.95rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 999px; background: var(--text); color: var(--bg); text-decoration: none; border: 1px solid var(--text); }
+.btn:hover { opacity: 0.85; }
+.btn.outline { background: transparent; color: var(--text); }
+.btn.soon { opacity: 0.55; cursor: default; }
+.btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+/* layout: one centred reading column (--narrow) for headings, text, tables and result figures; only the teaser,
+   the two wide diagrams and the method cards use the wider --wide container (UI review, 6 Nov 2026) */
+.col { max-width: var(--narrow); margin: 0 auto; }
+
+/* media */
+.teaser { margin: 36px auto 0; max-width: 960px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; }
+.teaser video, .teaser img { width: 100%; }
+.tagline { font-size: 1.12rem; text-align: center; max-width: var(--narrow); margin: 20px auto 0; color: var(--muted); }
+figure { margin: 28px 0 36px; }
+figure img { width: 100%; border-radius: 8px; background: #fff; border: 1px solid var(--border); }
+figcaption { font-family: var(--sans); font-size: 0.86rem; color: var(--muted); line-height: 1.55; margin-top: 10px; }
+figcaption b { color: var(--text); }
+figure.wide figcaption { max-width: var(--narrow); margin-left: auto; margin-right: auto; }
+
+/* system: description beside a compact drawing of the robot */
+.system { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; margin: 8px 0 4px; }
+.system p { margin: 0; }
+.system figure { margin: 0; }
+.system img { width: auto; max-width: 380px; max-height: 280px; }
+
+/* cards */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 28px 0 8px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 18px 6px; }
+.card h3 { margin: 0 0 0.4em; font-size: 1rem; }
+.card p { font-size: 0.95rem; line-height: 1.55; }
+.eq { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 16px; overflow-x: auto; margin: 16px 0 20px; }
+.eq .katex-display { margin: 0.5em 0; }
+
+/* results table */
+.table-wrap { overflow-x: auto; margin: 8px 0 16px; }
+table.results { width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 0.93rem; }
+table.results caption { caption-side: top; text-align: left; font-size: 0.82rem; color: var(--muted); padding-bottom: 6px; }
+table.results th, table.results td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: center; }
+table.results th[scope="row"] { text-align: left; font-weight: 500; white-space: nowrap; }
+table.results thead th { font-weight: 600; border-bottom: 2px solid var(--border); vertical-align: bottom; }
+table.results tr.ours th, table.results tr.ours td { background: var(--accent-soft); color: var(--text); font-weight: 700; }
+table.results tr.ours th { border-left: 3px solid var(--accent); }
+
+/* system tag */
+.tag { font-family: var(--sans); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent);
+  background: var(--accent-soft); padding: 3px 9px; border-radius: 999px; display: inline-block; margin-bottom: 6px; }
+
+.explorer-cta { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; align-items: center; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; padding: 28px; }
+.explorer-cta img { border-radius: 8px; border: 1px solid var(--border); }
+.explorer-cta h2 { margin-top: 0; }
+
+pre.bib { font-family: var(--mono); font-size: 0.82rem; line-height: 1.5; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 16px 16px; position: relative; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy { position: absolute; top: 10px; right: 10px; font-family: var(--sans); font-size: 0.78rem; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; }
+.nw { white-space: nowrap; }
+.note { font-family: var(--sans); font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+footer { border-top: 1px solid var(--border); padding: 28px 0 40px; font-family: var(--sans); font-size: 0.85rem; color: var(--muted); text-align: center; }
+
+@media (max-width: 820px) {
+  body { font-size: 17px; }
+  .cards { grid-template-columns: 1fr; }
+  .explorer-cta { grid-template-columns: 1fr; padding: 20px; }
+  section { padding: 40px 0; }
+  header.hero { padding-top: 40px; }
+}
+@media (max-width: 700px) {
+  .wrap { padding: 0 12px; }
+  .system { grid-template-columns: 1fr; gap: 16px; }
+  .system img { width: 100%; max-width: 300px; max-height: none; margin: 0 auto; }
+  table.results { font-size: 0.85rem; }
+  table.results th, table.results td { padding: 8px 6px; }
+  table.results th[scope="row"] { white-space: normal; min-width: 7.5em; }
+  .eq { padding: 4px 10px; }
+  .eq .katex-display { font-size: 0.7em; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero wrap">
+  <h1><span class="name">LieSPHGP</span>: Stochastic Port-Hamiltonian Gaussian Processes for Learning from Noisy Dynamics on Lie Groups</h1>
+  <p class="authors">
+    <span>Luke McLennan<sup>1</sup></span>
+    <span>Thribhuvan Rapolu<sup>2</sup></span>
+    <span>Chandrajit Bajaj<sup>1,2</sup></span>
+  </p>
+  <p class="affils">
+    <span><sup>1</sup>Oden Institute for Computational Engineering &amp; Sciences, University of Texas at Austin</span>
+    <span><sup>2</sup>Department of Computer Science, University of Texas at Austin</span>
+  </p>
+  <div class="buttons">
+    <!-- TODO: replace href with the arXiv link (e.g. https://arxiv.org/abs/XXXX.XXXXX) and remove class "soon" -->
+    <a class="btn soon" id="paper-link" href="#" aria-disabled="true" title="arXiv link coming soon">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15a0 0 0 0 1 0 0H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5zM8 12h8v1.5H8V12zm0 3.5h8V17H8v-1.5z"/></svg>
+      Paper (arXiv, soon)</a>
+    <a class="btn" href="https://github.com/CVC-Lab/LieSPHGP">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      Code</a>
+    <a class="btn outline" href="explorer.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5zm0 2.3L18.7 8 12 11.7 5.3 8 12 4.3zM5 9.7l6 3.3v6.6l-6-3.3V9.7zm8 9.9V13l6-3.3v6.6l-6 3.3z"/></svg>
+      Interactive results</a>
+    <a class="btn outline" href="#bibtex">BibTeX</a>
+  </div>
+
+  <div class="teaser">
+    <video src="media/teaser.mp4" poster="media/teaser.png" controls muted playsinline preload="metadata"></video>
+  </div>
+  <p class="tagline">LieSPHGP learns the mass, potential, damping, control and diffusion of a rigid body from noisy trajectories, keeps rotations on the Lie group, and hands the learned physics to an energy-based controller without retraining.</p>
+</header>
+
+<main>
+
+<section id="abstract">
+  <div class="wrap"><div class="col">
+    <h2>Abstract</h2>
+    <p>Learning predictive models for dynamics is difficult because observations are often sparse and noisy, while the underlying dynamics evolve on nonlinear configuration manifolds and are affected by environmental dissipation and stochastic disturbances. Standard neural dynamics models can fit short-term trajectories but often violate physical structure, accumulate error over long horizons, or rely on parameterizations that introduce singularities such as gimbal lock. We introduce LieSPHGP, a stochastic Gaussian-process framework for learning rigid body dynamics with port-Hamiltonian structure and stability-aware robustness. LieSPHGP represents motion on Lie groups and Lie algebras, enabling coordinate-consistent optimization without singular parameterizations. Learned mass, potential energy, dissipation, and control components retain physical roles; a separate diffusion term represents stochastic forcing. Each component is modeled by Matérn kernel Gaussian processes which capture uncertainty induced by noisy observations. To improve physical validity, Lie group exponential map updates preserve rotational constraints, while positive-definite damping ensures nonnegative deterministic energy dissipation. The implicit-explicit integrator additionally provides unconditional stability for the frozen linear damping subsystem. The resulting model learns predictive dynamics that are robust to noise, respect rigid body geometry, and capture both intrinsic motion and environmental dissipation. Experiments on various noisy rigid body benchmarks show improved prediction accuracy, stronger long-horizon stability, and better satisfaction of manifold constraints compared with neural dynamics baselines.</p>
+  </div></div>
+</section>
+
+<section id="method">
+  <div class="wrap">
+    <div class="col"><h2>Method</h2></div>
+    <figure class="wide">
+      <img src="media/overview.png" alt="Overview: noisy observations of a 3D pendulum and a quadrotor are collected, five Gaussian-process subnetworks are learned through a Lie-IMEX integrator and an EKF likelihood, and the learned model drives an IDA-PBC controller." loading="lazy">
+      <figcaption><b>Overview.</b> From noisy observations $\mathcal{D}=\{(y_k,u_k)\}$ we learn a physics-structured model that captures the dynamics and their uncertainty while preserving the geometry of the state space. The learned model is then used to design a controller that drives the true system to a target state or trajectory, without additional training.</figcaption>
+    </figure>
+
+    <div class="col">
+      <p>The state $x=(q,p)$ lives on a Lie group ($SO(3)$ for attitude, $SE(3)$ for pose). We model it with a stochastic port-Hamiltonian SDE in Stratonovich form,</p>
+      <div class="eq">$$dx = \big[(J(x)-R(x))\,\nabla H(x) + G(x)\,u\big]\,dt + \xi(x)\circ dW_t,$$
+      $$H(q,p)=\tfrac12\,p^\top M(q)^{-1}p + V(q),$$</div>
+      <p>where $J$ is the canonical structure, $R\succeq 0$ the dissipation, $G$ the control matrix and $\xi$ the diffusion. Every unknown term, $M^{-1}$, $V$, $R$, $G$ and $\xi$, is its own Gaussian-process subnetwork, so each one keeps its physical meaning and its own uncertainty.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h3>Stochastic port-Hamiltonian model on Lie groups</h3>
+        <p>A learned diffusion term models stochastic forcing such as wind separately from measurement noise and from uncertainty in the learned physics.</p>
+      </div>
+      <div class="card">
+        <h3>Lie-IMEX integrator</h3>
+        <p>Exponential-map updates keep rotations exactly on the group. The learned damping is treated implicitly, which is unconditionally stable for the frozen linear damping step even when the learned damping is stiff.</p>
+      </div>
+      <div class="card">
+        <h3>GP subnetworks + Lie-group EKF</h3>
+        <p>Matérn random-Fourier-feature GPs with a variational weight posterior. They are trained jointly through a differentiable extended Kalman filter that accounts for both process and observation noise.</p>
+      </div>
+    </div>
+
+    <div class="col"><h3>From learned physics to control</h3></div>
+    <figure class="wide">
+      <img src="media/control_loop.png" alt="Control loop: the frozen learned subnetworks feed an IDA-PBC controller with energy shaping and damping injection, which drives the 3D pendulum or quadrotor plant." loading="lazy">
+      <figcaption><b>Model-based control.</b> The frozen subnetworks are plugged into an IDA-PBC controller: energy shaping uses the learned $M^{-1}$, $V$ and $G$, and damping injection drives the system to the target. The same learned model serves a 3D pendulum swing-up on $SO(3)$ and quadrotor trajectory tracking on $SE(3)$.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="pendulum">
+  <div class="wrap"><div class="col">
+    <span class="tag">SO(3) · simulated</span>
+    <h2>Windy 3D pendulum</h2>
+    <div class="system">
+      <div>
+        <p>A rigid 3D pendulum on $SO(3)$ is pushed by stochastic wind, and its states are observed with noise. LieSPHGP is the most accurate model on every accuracy, probabilistic and identification metric, in every seed. Both Lie-IMEX models keep $SO(3)$ at round-off level.</p>
+      </div>
+      <figure>
+        <img src="media/pendulum_viz.png" alt="3D windy rigid-body pendulum: pivot, rod and bob with gravity, control, dissipation and wind forces, and the roll, pitch and yaw rotations." loading="lazy">
+      </figure>
+    </div>
+    <figure>
+      <img src="media/pendulum_prediction.png" alt="Open-loop roll, pitch and yaw over 10 seconds for the true SDE, LieSPHGP, Lie-PH-NN-SDE and PH-NODE." loading="lazy">
+      <figcaption><b>Open-loop prediction.</b> Roll, pitch and yaw predicted over $10$ s from the true initial state using the recorded inputs. Lines show the mean of $32$ sampled paths, and shading shows $\pm1\sigma$ and $\pm2\sigma$. The trajectory shown is the held-out one with the largest gap between Lie-PH-NN-SDE and LieSPHGP ($37.0^\circ$ vs. $11.5^\circ$ mean rotation error).</figcaption>
+    </figure>
+
+    <h3>Swing-up with the learned model</h3>
+    <div>
+      <p>Each learned model is plugged into the same IDA-PBC controller, which must swing the 3D pendulum from a random attitude up to the upright position and hold it there in the wind (25 flights: 5 start attitudes &times; 5 wind samples). A flight <b>succeeds</b> if the pendulum stays within $10^\circ$ of upright over the last 2&nbsp;s of the 10&nbsp;s run. Lowering the gain scale $s$ weakens the feedback, so the controller relies more on the learned model.</p>
+      <div class="table-wrap">
+        <table class="results">
+          <caption>Swing-up success rate (mean over 5 training seeds)</caption>
+          <thead><tr><th scope="col"></th><th scope="col">normal gains <span class="nw">($s=1$)</span></th><th scope="col">low gains <span class="nw">($s=0.25$)</span></th></tr></thead>
+          <tbody>
+            <tr><th scope="row">True model (ground truth)</th><td>100&nbsp;%</td><td>84&nbsp;%</td></tr>
+            <tr class="ours"><th scope="row">LieSPHGP (ours)</th><td>100&nbsp;%</td><td>78&nbsp;%</td></tr>
+            <tr><th scope="row">PH-NODE</th><td>31&nbsp;%</td><td>0&nbsp;%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>At normal gains, LieSPHGP ends $0.027$&nbsp;rad from upright, almost the same as the true model's $0.024$&nbsp;rad.</p>
+    </div>
+    <figure>
+      <img src="media/closed_loop.png" alt="Angle to upright over 10 seconds for the IDA-PBC swing-up at normal and low gains." loading="lazy">
+      <figcaption><b>Closed-loop IDA-PBC swing-up.</b> Each model supplies its learned subnetworks to the same controller. LieSPHGP (orange) follows the controller built from the true model (green). A smaller gain scale $s$ makes the controller rely more on the learned model, and differences that are modest in open-loop prediction become decisive for control. The success counts in the legend are for one training seed (seed 0); the table above averages 5 seeds.</figcaption>
+    </figure>
+  </div></div>
+</section>
+
+<section id="quadrotor">
+  <div class="wrap"><div class="col">
+    <span class="tag">SE(3) · simulated (PyBullet)</span>
+    <h2>Quadrotor in stochastic wind</h2>
+    <div class="system">
+      <div>
+        <p>A Crazyflie-type quadrotor in PyBullet with stochastic wind. Each learned model drives the same geometric tracking controller with an IDA-PBC attitude loop, whose commands go to the four rotors of the true plant. The models fly $10$ held-out $10$&nbsp;s reference paths, each with $5$ wind samples.</p>
+      </div>
+      <figure>
+        <img src="media/quadrotor_viz.png" alt="Quadrotor body frame, rotor forces and wind disturbance." loading="lazy">
+      </figure>
+    </div>
+    <div>
+      <div class="table-wrap">
+        <table class="results">
+          <caption>Closed-loop tracking (mean over 3 training seeds)</caption>
+          <thead><tr><th scope="col"></th><th scope="col">position RMSE (m)</th><th scope="col">velocity RMSE (m/s)</th><th scope="col">valid tracking time (s)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">True model (ground truth)</th><td>0.127</td><td>0.464</td><td>&mdash;</td></tr>
+            <tr class="ours"><th scope="row">LieSPHGP (ours)</th><td>0.133</td><td>0.485</td><td>9.22</td></tr>
+            <tr><th scope="row">PH-NODE</th><td>0.251</td><td>0.856</td><td>8.39</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note"><i>Valid tracking time</i>: how long the flight stays close to the true-model controller's flight in the same wind (at most $10$&nbsp;s).</p>
+    </div>
+    <figure>
+      <img src="media/se3-quadrotor-closed-loop.png" alt="3-D tracking trajectories for two held-out flights: LieSPHGP, PH-NODE and the true model." loading="lazy">
+      <figcaption><b>Closed-loop tracking.</b> Two of the ten held-out $10$ s flights (A and B). Thin lines are individual wind samples, thick lines their mean, and the dashed line is the reference. LieSPHGP (orange) tracks close to the controller that uses the true dynamics (green), while PH-NODE (purple) deviates during turns. Panel RMSEs are for one training seed and one reference; the table above averages 3 seeds and all references.</figcaption>
+    </figure>
+  </div></div>
+</section>
+
+<section id="rov">
+  <div class="wrap"><div class="col">
+    <span class="tag">SE(3) · real data</span>
+    <h2>BlueROV2 underwater vehicle</h2>
+    <div class="system">
+      <div>
+        <p>Real BlueROV2 Heavy recordings from the Marinarium dataset, with a pilot in the loop. The physics baseline is given the vehicle's published mass, added mass, damping, restoring forces and thruster map. LieSPHGP learns $M^{-1}$, $V$, $D$ and $G$ from the recorded trajectories alone.</p>
+      </div>
+      <figure>
+        <img src="media/rov_viz.png" alt="BlueROV2 body frame and thrusters in water." loading="lazy">
+      </figure>
+    </div>
+    <div>
+      <div class="table-wrap">
+        <table class="results">
+          <caption>Prediction on held-out real recordings (LieSPHGP: mean over 2 training seeds)</caption>
+          <thead><tr><th scope="col"></th><th scope="col">state RMSE after 0.2&nbsp;s</th><th scope="col">state RMSE after 2&nbsp;s</th><th scope="col">valid prediction time (s)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Physics (published parameters)</th><td>0.128</td><td>0.301</td><td>1.62</td></tr>
+            <tr><th scope="row">Koopman (EDMDc)</th><td>0.126</td><td>0.259</td><td>0.81</td></tr>
+            <tr class="ours"><th scope="row">LieSPHGP (ours)</th><td>0.105</td><td>0.252</td><td>1.98</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note"><i>State RMSE</i>: error over all 12 state variables (position, Euler angles, linear and angular velocity), predicted from each test sample with the recorded thruster commands. <i>Valid prediction time</i>: how long the position error stays below $0.1$&nbsp;m (mean over $15$ held-out $10$&nbsp;s segments). Lower RMSE and longer valid time are better.</p>
+    </div>
+    <figure>
+      <img src="media/rov_prediction.png" alt="Predicted x, y, z and position error on a held-out BlueROV2 test segment." loading="lazy">
+      <figcaption><b>Open-loop prediction on a held-out test segment.</b> Positions $x$, $y$, $z$ (positive downward) and position error, using the recorded thruster commands and the measured initial state. Dotted lines mark the valid prediction time. LieSPHGP shows the mean of $32$ sampled paths with a $\pm2\sigma$ band. The segment shown has the median LieSPHGP valid prediction time among the $15$ test segments.</figcaption>
+    </figure>
+  </div></div>
+</section>
+
+<section id="explorer">
+  <div class="wrap"><div class="col">
+    <div class="explorer-cta">
+      <div>
+        <h2>Explore the results</h2>
+        <p>Replay the paper's runs in your browser: a 3-D view of the 3D pendulum swing-up and open loop and of the quadrotor tracking flights, with live error, energy and $SO(3)$ plots for every flight and wind seed.</p>
+        <a class="btn" href="explorer.html">Open the interactive explorer &rarr;</a>
+      </div>
+      <a href="explorer.html"><img src="media/teaser.png" alt="Preview of the interactive results explorer." loading="lazy"></a>
+    </div>
+  </div></div>
+</section>
+
+<section id="bibtex">
+  <div class="wrap"><div class="col">
+    <h2>BibTeX</h2>
+    <!-- TODO: update with the arXiv identifier once the paper is posted -->
+    <pre class="bib" id="bib"><button class="copy" type="button" id="copy-bib">Copy</button>@misc{mclennan2026liesphgp,
+  title         = {Stochastic Port-Hamiltonian Gaussian Processes for Learning from Noisy Dynamics on Lie Groups},
+  author        = {McLennan, Luke and Rapolu, Thribhuvan and Bajaj, Chandrajit},
+  year          = {2026},
+  eprint        = {XXXX.XXXXX},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}</pre>
+  </div></div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    Code and data: <a href="https://github.com/CVC-Lab/LieSPHGP">github.com/CVC-Lab/LieSPHGP</a> · <a href="../">Thribhuvan Rapolu</a>
+  </div>
+</footer>
+
+<script>
+document.getElementById("paper-link").addEventListener("click", (e) => {
+  if (e.currentTarget.classList.contains("soon")) e.preventDefault();
+});
+document.getElementById("copy-bib").addEventListener("click", async (e) => {
+  const text = document.getElementById("bib").textContent.replace(/^Copy/, "");
+  try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied"; }
+  catch (err) { e.target.textContent = "Select & copy"; }
+  setTimeout(() => (e.target.textContent = "Copy"), 1500);
+});
+</script>
+</body>
+</html>

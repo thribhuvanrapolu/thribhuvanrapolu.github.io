@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LieSPHGP Results Explorer</title>
+<meta name="description" content="Interactive replay of the LieSPHGP paper results: 3D pendulum and quadrotor.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: full-window app like a drafting table. Top bar (name + system tabs); below, the live panels (3-D replay
+   and the plot column) fill the window and a 300 px control sidebar sits on the right; stacks on narrow screens. */
+:root {
+  color-scheme: light;                                    /* single white theme, by choice */
+  --bg: #ffffff;
+  --panel: #f7f9fc;
+  --panel-2: #eef2f7;
+  --sidebar: #f7f9fc;
+  --border: #d3dce6;
+  --text: #15202c;
+  --muted: #4d6073;
+  --faint: #8797a8;
+  --accent: #f08c00;
+  --gold: #a86400;
+  --grid: rgba(21, 32, 44, 0.09);
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --step--2: 0.72rem;
+  --step--1: 0.8rem;
+  --step-0: 0.9rem;
+  --step-1: 1.05rem;
+  --radius: 5px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-mono); font-size: var(--step-0); line-height: 1.45; margin: 0;
+  display: flex; flex-direction: column; }
+h2, h3 { margin: 0; font-weight: 600; text-wrap: balance; }
+p { margin: 0; }
+.topbar { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 22px; padding-inline: 20px; padding-block: 10px 0; border-bottom: 1px solid var(--border); }
+.brand { display: grid; padding-bottom: 8px; }
+.brand b { font-size: 1.15rem; letter-spacing: 0.02em; }
+.brand span { font: var(--step--2) var(--font-sans); color: var(--muted); }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+nav.tabs button { font: 500 var(--step--1) var(--font-mono); color: var(--muted); background: transparent; border: 1px solid transparent; border-bottom: none;
+  padding: 7px 14px; border-radius: var(--radius) var(--radius) 0 0; cursor: pointer; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--gold); background: var(--panel); border-color: var(--gold); }
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.layout { flex: 1; min-height: 0; display: flex; }
+.main { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 14px; padding: 14px 16px 16px 20px; min-height: 0; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
+.view { position: relative; min-height: 0; overflow: hidden; }
+.view canvas { display: block; width: 100%; height: 100%; }
+.view .hint { position: absolute; right: 10px; bottom: 8px; font-size: var(--step--2); color: var(--faint); pointer-events: none; }
+.view .clock { position: absolute; left: 12px; top: 10px; font-weight: 600; font-size: var(--step-1); font-variant-numeric: tabular-nums; pointer-events: none; }
+.view .legend { position: absolute; left: 12px; bottom: 10px; display: grid; gap: 2px; font-size: var(--step--2); color: var(--muted); pointer-events: none; }
+.rig-label { position: absolute; transform: translate(-50%, -100%); text-align: center; font-size: var(--step--2); line-height: 1.25; pointer-events: none;
+  white-space: normal; overflow-wrap: anywhere; }
+.rig-label b { display: block; font-size: var(--step--1); }
+.rig-label b small { display: block; font-size: var(--step--2); font-weight: 500; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
+.plots { display: grid; gap: 10px; padding: 10px; align-content: start; overflow-y: auto; min-height: 0; }
+.plot { position: relative; min-width: 0; }
+.plot .ptitle { font-size: var(--step--2); color: var(--muted); margin-bottom: 2px; }
+.plot canvas { display: block; width: 100%; height: 128px; background: var(--panel-2); border-radius: 4px; }
+.plot.phase canvas { height: 180px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.grid3 .plot canvas { height: 116px; cursor: zoom-in; }
+.grid3 .ptitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+aside.sidebar { width: 300px; flex-shrink: 0; background: var(--sidebar); border-left: 1px solid var(--border); padding: 14px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px; }
+.sys-head { display: grid; gap: 4px; }
+.sys-head h2 { font-size: var(--step-1); }
+.spec { font-size: var(--step--2); color: var(--muted); overflow-wrap: anywhere; }
+.group { display: grid; gap: 6px; }
+.group > .label { font-size: var(--step--2); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.seg button { font: 500 var(--step--1) var(--font-mono); color: var(--muted); background: var(--panel); border: none; padding: 6px 4px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--border); color: var(--text); }
+.field { display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; align-items: center; font-size: var(--step--1); color: var(--muted); }
+select { width: 100%; font: var(--step--1) var(--font-mono); color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 5px 6px; }
+.btn { font: 500 var(--step--1) var(--font-mono); color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 7px 10px; cursor: pointer; }
+.btn.primary { background: var(--accent); color: #ffffff; border-color: var(--accent); font-weight: 600; padding: 10px; font-size: var(--step-0); }
+.transport { display: grid; grid-template-columns: 2fr 1fr; gap: 6px; }
+.scrub { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; font-size: var(--step--2); color: var(--muted); }
+.scrub input { width: 100%; accent-color: var(--accent); }
+.checks { display: grid; gap: 4px; }
+.check { display: flex; gap: 8px; align-items: center; font: var(--step--1) var(--font-mono); color: var(--text); background: none; border: none; padding: 2px 0; cursor: pointer; text-align: left; }
+.check i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.check[aria-pressed="false"] { opacity: 0.4; }
+.readout { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; display: grid; gap: 8px; font-size: var(--step--1); }
+.readout .caption { font: var(--step--2) var(--font-sans); color: var(--muted); }
+.metric { display: grid; gap: 2px; }
+.metric .mname { font-size: var(--step--2); color: var(--muted); }
+.metric .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-variant-numeric: tabular-nums; }
+.metric .row span { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.metric .row span .dot { flex-shrink: 0; }
+.metric .row.best b { color: var(--gold); }
+details { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; }
+details > summary { cursor: pointer; padding: 8px 10px; font-size: var(--step--1); color: var(--text); }
+details > div { padding: 0 10px 10px; display: grid; gap: 10px; }
+.note h3 { font-size: var(--step--2); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+.note p { font: var(--step--1) / 1.5 var(--font-sans); color: var(--muted); }
+.note b { color: var(--text); }
+.expand { position: absolute; top: 6px; right: 6px; z-index: 2; font: 500 var(--step--2) var(--font-mono); color: var(--muted); background: var(--panel-2);
+  border: 1px solid var(--border); border-radius: 4px; padding: 3px 7px; cursor: pointer; }
+.expand:hover { color: var(--text); border-color: var(--muted); }
+.view .expand { top: 10px; right: 10px; font-size: var(--step--1); padding: 5px 9px; }
+.plot .expand { top: -2px; right: 0; }
+.modal { position: fixed; inset: 0; z-index: 50; background: rgba(21, 32, 44, 0.45); display: grid; padding: 3vh 3vw; }
+.modal-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0; }
+.modal-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.modal-head .title { flex: 1; min-width: 0; font-weight: 600; }
+.modal-head .clock-small { font-variant-numeric: tabular-nums; color: var(--muted); }
+.modal-body { min-height: 0; padding: 14px; display: grid; }
+.modal-body > .in-modal { width: 100%; height: 100%; min-height: 0; }
+.modal-body .plot.in-modal { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.modal-body .plot.in-modal canvas { height: 100% !important; cursor: default; }
+.modal-body .view.in-modal { height: 100%; }
+.in-modal .expand { display: none; }
+.teaser-btn { margin-left: auto; align-self: center; margin-bottom: 8px; font: 500 var(--step--1) var(--font-mono); color: var(--text);
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 12px; cursor: pointer; }
+.teaser-btn:hover, .teaser-btn:focus-visible { border-color: var(--accent); }
+.teaser-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(21, 32, 44, 0.55); display: grid; place-items: center; padding: 16px; }
+.teaser-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); width: min(1280px, 100%);
+  padding: 10px 12px 12px; display: grid; gap: 8px; }
+.teaser-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font: var(--step--1) var(--font-sans); }
+.teaser-head span { color: var(--muted); }
+.teaser-head button { margin-left: auto; font: 500 var(--step--2) var(--font-mono); color: var(--muted); background: var(--panel-2);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 3px 8px; cursor: pointer; }
+.teaser-box video { display: block; width: 100%; height: auto; max-height: calc(100vh - 150px); aspect-ratio: 16 / 9; background: #ffffff; cursor: pointer; }
+.teaser-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center;
+  font: var(--step--2) var(--font-mono); color: var(--muted); }
+.teaser-bar button { font: 500 var(--step--2) var(--font-mono); color: var(--text); background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 4px 10px; cursor: pointer; }
+.teaser-bar input { width: 100%; accent-color: var(--accent); }
+#teaser-time { font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .teaser-bar { grid-template-columns: auto minmax(0, 1fr) auto; } #teaser-full { display: none; } }
+@media (max-width: 1000px) {
+  body { height: auto; }
+  .layout { flex-direction: column; }
+  .main { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
+  .view { height: 420px; }
+  .plots { overflow: visible; }
+  aside.sidebar { width: auto; border-left: 0; border-top: 1px solid var(--border); padding: 14px 16px 24px; }
+}
+@media (max-width: 480px) { .grid3 { grid-template-columns: minmax(0, 1fr); } .topbar { padding-inline: 16px; } }
+</style>
+
+<header class="topbar">
+  <div class="brand"><b><a href="./" style="color:inherit;text-decoration:none" title="Back to the project page">&larr; LieSPHGP</a></b><span>stochastic port-Hamiltonian GPs on Lie groups · paper results, replayed</span></div>
+  <nav class="tabs" role="tablist" aria-label="System">
+    <button role="tab" id="tab-pendulum-swing" data-tab="pendulum-swing" aria-selected="true">3D windy pendulum · SO(3) · Closed loop · Swing-up · Controller</button>
+    <button role="tab" id="tab-pendulum-open" data-tab="pendulum-open" aria-selected="false">3D windy pendulum · SO(3) · Open loop · Simulator</button>
+    <button role="tab" id="tab-quadrotor" data-tab="quadrotor" aria-selected="false">Quadrotor · SE(3) · Closed loop · Tracking · Controller</button>
+  </nav>
+  <button class="teaser-btn" id="teaser-open" type="button" aria-haspopup="dialog">▶ Teaser (37 s)</button>
+</header>
+
+<div class="teaser-overlay" id="teaser" role="dialog" aria-modal="true" aria-labelledby="teaser-title" hidden>
+  <div class="teaser-box">
+    <div class="teaser-head"><b id="teaser-title">LieSPHGP in 37 s</b><span>collect noisy trajectories → learn the five GP subnetworks → control with IDA-PBC</span>
+      <button id="teaser-close" type="button">Close ✕</button></div>
+    <video id="teaser-video" src="media/teaser.mp4" poster="media/teaser.png" muted playsinline preload="metadata"></video>
+    <div class="teaser-bar">
+      <button id="teaser-play" type="button">Pause</button>
+      <input id="teaser-seek" type="range" min="0" max="1000" value="0" aria-label="Teaser position">
+      <span id="teaser-time">0:00 / 0:37</span>
+      <button id="teaser-full" type="button">Full screen</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <main class="main">
+    <div class="panel view" id="view">
+      <canvas id="three"></canvas>
+      <div class="clock" id="clock">t = 0.0 s</div>
+      <div class="legend" id="legend"></div>
+      <div id="labels"></div>
+      <div class="hint">drag: orbit · scroll: zoom</div>
+      <button class="expand" id="view-expand" aria-label="Show the 3-D view full screen">⤢ Full screen</button>
+      <div class="loading" id="loading">Loading data…</div>
+    </div>
+    <div class="panel plots" id="plots"></div>
+  </main>
+
+  <aside class="sidebar" aria-label="Controls">
+    <section class="sys-head">
+      <h2 id="sys-title">3D windy pendulum</h2>
+      <div class="spec" id="sys-spec"></div>
+    </section>
+    <div class="group" id="modes"></div>
+    <div class="group" id="case-fields"></div>
+    <div class="group">
+      <div class="label">Playback</div>
+      <div class="transport"><button class="btn primary" id="play">Pause</button><button class="btn" id="restart">Restart</button></div>
+      <div class="seg" id="speed">
+        <button data-speed="0.25" aria-pressed="false">0.25×</button><button data-speed="0.5" aria-pressed="false">0.5×</button><button data-speed="1" aria-pressed="true">1×</button><button data-speed="2" aria-pressed="false">2×</button>
+      </div>
+      <div class="scrub"><label for="scrub">time</label><input type="range" id="scrub" min="0" max="300" value="0" step="1"></div>
+    </div>
+    <div class="group">
+      <div class="label">Models</div>
+      <div class="checks" id="toggles"></div>
+    </div>
+    <div class="group">
+      <div class="label">This run</div>
+      <div class="readout" id="readout"></div>
+    </div>
+    <details id="paper-box"><summary>Paper table (all runs)</summary><div id="paper"></div></details>
+    <details id="about-box"><summary>About this test</summary><div id="notes"></div></details>
+    <p class="spec">Every model is trained in float32 for a fixed 5000 steps; the final checkpoint is used. No physical constants are given to the learned models. Closed-loop flights replay the cached simulator states; open-loop predictions are recomputed from the trained models with the paper's evaluation code.</p>
+  </aside>
+</div>
+
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="title" id="modal-title"></span>
+      <span class="clock-small" id="modal-clock"></span>
+      <button class="btn" id="modal-play">Pause</button>
+      <button class="btn" id="modal-close">Close ✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+"use strict";
+// ---------------------------------------------------------------------------------------------------------------
+// data helpers
+// ---------------------------------------------------------------------------------------------------------------
+const COLORS = {
+  pendulum: { "Analytical": "#2f9e44", "Lie-PH-GP-SDE": "#f08c00", "Lie-PH-NN-SDE": "#1c7ed6", "PH-NODE": "#7048e8", truth: "#15202c" },
+  quadrotor: { "Analytical": "#2f9e44", "Lie-PH-GP-SDE": "#f08c00", "PH-NODE": "#d6336c", reference: "#5c6f82" },
+};
+const cache = {};
+function typed(node) {                    // numeric / null arrays -> Float32Array (null -> NaN), recursively
+  if (Array.isArray(node)) {
+    const first = node.find(v => v !== null);
+    if (node.length && (first === undefined || typeof first === "number")) {
+      const out = new Float32Array(node.length);
+      for (let i = 0; i < node.length; i++) out[i] = node[i] === null ? NaN : node[i];
+      return out;
+    }
+    return node.map(typed);
+  }
+  if (node && typeof node === "object") { for (const k of Object.keys(node)) if (k !== "score" && k !== "paper_table") node[k] = typed(node[k]); }
+  return node;
+}
+async function load(system) {
+  if (!cache[system]) {
+    const response = await fetch(`data/${system}.json`);
+    if (!response.ok) throw new Error(`data/${system}.json: HTTP ${response.status}`);
+    cache[system] = typed(await response.json());
+    for (const [label, name] of Object.entries(cache[system].names))     // the true physics is the ground truth: "(GT)"
+      if (name.startsWith("True physics") && !name.includes("GT")) cache[system].names[label] = name === "True physics" ? "True physics (GT)" : name.replace("True physics (", "True physics (GT, ");
+    Object.assign(cache[system].names, { "Lie-PH-GP-SDE": "LieSPHGP (ours, best)", "PH-NODE": "PH-NODE (prior work)" });
+  }
+  return cache[system];
+}
+const col = (arr, stride, j) => { const n = arr.length / stride, out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = arr[i * stride + j]; return out; };
+const norm3 = (a, b) => { const n = a.length / 3, out = new Float32Array(n); for (let i = 0; i < n; i++) { const dx = a[3*i] - b[3*i], dy = a[3*i+1] - b[3*i+1], dz = a[3*i+2] - b[3*i+2]; out[i] = Math.hypot(dx, dy, dz); } return out; };
+const fmt = (v, d = 3) => (v === null || v === undefined || !isFinite(v)) ? "–" : (Math.abs(v) > 0 && (Math.abs(v) < 1e-3 || Math.abs(v) >= 1e4) ? v.toExponential(1) : v.toFixed(d));
+
+// ---------------------------------------------------------------------------------------------------------------
+// canvas plots: time series and phase maps, drawn up to the current frame
+// ---------------------------------------------------------------------------------------------------------------
+class Plot {
+  constructor(parent, { title, xlabel, ylabel, log = false, phase = false, small = false, onClick = null }) {
+    this.el = document.createElement("div");
+    this.el.className = "plot" + (phase && !small ? " phase" : "");
+    this.el.innerHTML = `<div class="ptitle"></div>`;
+    this.el.querySelector(".ptitle").textContent = title;
+    this.canvas = document.createElement("canvas");
+    this.canvas.setAttribute("role", "img");
+    this.canvas.setAttribute("aria-label", title);
+    this.el.appendChild(this.canvas);
+    const expand = document.createElement("button"); expand.className = "expand"; expand.textContent = "⤢"; expand.title = "Full screen";
+    expand.setAttribute("aria-label", `Show "${title}" full screen`);
+    expand.addEventListener("click", event => { event.stopPropagation(); openModal(this.el, this.el.querySelector(".ptitle").textContent); });
+    this.el.appendChild(expand);
+    parent.appendChild(this.el);
+    Object.assign(this, { xlabel, ylabel, log, phase, series: [], hlines: [], k: 0, t: null });
+    if (onClick) this.canvas.addEventListener("click", onClick);
+    new ResizeObserver(() => this.draw()).observe(this.canvas);
+  }
+  set(series, { t = null, hlines = [], xr = null, yr = null } = {}) {
+    this.series = series; this.t = t; this.hlines = hlines;
+    const xs = [], ys = [];
+    for (const s of series) {
+      const x = this.phase ? s.x : t;
+      for (let i = 0; i < s.y.length; i++) { const yv = s.y[i], xv = x[i]; if (isFinite(yv) && isFinite(xv) && (!this.log || yv > 0)) { xs.push(xv); ys.push(yv); } }
+      if (s.band) for (const b of s.band) for (const v of b) if (isFinite(v) && (!this.log || v > 0)) ys.push(v);
+    }
+    for (const h of hlines) ys.push(h.y);
+    const range = (vals, pad, robust) => {
+      if (!vals.length) return [0, 1];
+      const sorted = Float64Array.from(vals).sort();
+      let lo = robust ? sorted[Math.floor(0.002 * (sorted.length - 1))] : sorted[0];
+      let hi = robust ? sorted[Math.ceil(0.995 * (sorted.length - 1))] : sorted[sorted.length - 1];
+      if (hi === lo) { hi += 1; lo -= this.log ? 0 : 1; }
+      return [lo - pad * (hi - lo), hi + pad * (hi - lo)];
+    };
+    this.xr = xr || (this.phase ? range(xs, 0.06, true) : [t[0], t[t.length - 1]]);
+    if (yr) this.yr = yr;
+    else if (this.log) { const pos = ys.filter(v => v > 0); const lo = Math.min(...pos.slice(0, 200000)), hi = Math.max(...pos.slice(0, 200000)); this.yr = [Math.pow(10, Math.floor(Math.log10(lo))), Math.pow(10, Math.ceil(Math.log10(hi)) + 0.3)]; }
+    else { const r = range(ys, 0.08, true); this.yr = this.phase ? r : [Math.min(0, r[0]), r[1]]; }
+    this.draw();
+  }
+  cursor(k) { this.k = k; this.draw(); }
+  draw() {
+    const c = this.canvas, dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    if (!this.series.length) return;
+    const css = getComputedStyle(document.documentElement);
+    const muted = css.getPropertyValue("--muted").trim(), grid = css.getPropertyValue("--grid").trim();
+    const L = 48, R = 8, T = 8, B = 26, pw = w - L - R, ph = h - T - B;
+    const [x0, x1] = this.xr, [y0, y1] = this.yr;
+    const X = v => L + (v - x0) / (x1 - x0) * pw;
+    const Y = this.log ? v => T + ph - (Math.log10(Math.max(v, 1e-300)) - Math.log10(y0)) / (Math.log10(y1) - Math.log10(y0)) * ph
+                       : v => T + ph - (v - y0) / (y1 - y0) * ph;
+    g.font = "10px 'IBM Plex Mono', monospace"; g.fillStyle = muted; g.strokeStyle = grid; g.lineWidth = 1;
+    const ticks = (a, b, n) => { const step = Math.pow(10, Math.floor(Math.log10((b - a) / n))); const m = [1, 2, 5, 10].find(f => (b - a) / (f * step) <= n) * step; const out = []; for (let v = Math.ceil(a / m) * m; v <= b + 1e-9; v += m) out.push(+v.toFixed(10)); return out; };
+    const yt = this.log ? (() => { const out = []; const a = Math.ceil(Math.log10(y0)), b = Math.floor(Math.log10(y1)); const step = Math.max(1, Math.ceil((b - a + 1) / 4)); for (let e = a; e <= b; e += step) out.push(Math.pow(10, e)); return out; })() : ticks(y0, y1, 4);
+    g.textAlign = "right"; g.textBaseline = "middle";
+    for (const v of yt) { const y = Y(v); g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); g.fillText(this.log ? `1e${Math.round(Math.log10(v))}` : +v.toPrecision(3), L - 4, y); }
+    g.textAlign = "center"; g.textBaseline = "top";
+    for (const v of ticks(x0, x1, 5)) { const x = X(v); g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke(); g.fillText(+v.toPrecision(3), x, T + ph + 3); }
+    g.fillText(this.xlabel, L + pw / 2, T + ph + 14);
+    g.save(); g.translate(10, T + ph / 2); g.rotate(-Math.PI / 2); g.textBaseline = "middle"; g.fillText(this.ylabel, 0, 0); g.restore();
+    g.save(); g.beginPath(); g.rect(L, T, pw, ph); g.clip();
+    for (const hl of this.hlines) { g.setLineDash([4, 3]); g.strokeStyle = hl.color; g.beginPath(); g.moveTo(L, Y(hl.y)); g.lineTo(L + pw, Y(hl.y)); g.stroke(); g.setLineDash([]); if (hl.label) { g.fillStyle = hl.color; g.textAlign = "right"; g.textBaseline = "bottom"; g.fillText(hl.label, L + pw - 4, Y(hl.y) - 2); } }
+    const k = Math.min(this.k, (this.series[0].y.length || 1) - 1);
+    const path = (xa, ya, from, to) => { g.beginPath(); let pen = false; for (let i = from; i <= to; i++) { const xv = xa[i], yv = ya[i]; if (!isFinite(xv) || !isFinite(yv) || (this.log && yv <= 0)) { pen = false; continue; } const px = X(xv), py = Y(yv); if (pen) g.lineTo(px, py); else { g.moveTo(px, py); pen = true; } } g.stroke(); };
+    for (const s of this.series) {
+      const xa = this.phase ? s.x : this.t;
+      if (s.band) {
+        g.fillStyle = s.color; g.globalAlpha = 0.18; g.beginPath(); let started = false;
+        for (let i = 0; i <= k; i++) { const v = s.band[1][i]; if (!isFinite(v)) continue; if (!started) { g.moveTo(X(xa[i]), Y(v)); started = true; } else g.lineTo(X(xa[i]), Y(v)); }
+        for (let i = k; i >= 0; i--) { const v = s.band[0][i]; if (!isFinite(v)) continue; g.lineTo(X(xa[i]), Y(Math.max(v, this.log ? y0 : -Infinity))); }
+        g.fill(); g.globalAlpha = 1;
+      }
+      g.setLineDash(s.dash ? [5, 3] : []);
+      g.strokeStyle = s.color; g.globalAlpha = 0.16; g.lineWidth = 1; path(xa, s.y, 0, s.y.length - 1);
+      g.globalAlpha = 1; g.lineWidth = s.width || 1.6; path(xa, s.y, 0, k);
+      g.setLineDash([]);
+      if (this.phase && isFinite(xa[k]) && isFinite(s.y[k])) { g.fillStyle = s.color; g.beginPath(); g.arc(X(xa[k]), Y(s.y[k]), 3.5, 0, 2 * Math.PI); g.fill(); }
+    }
+    if (!this.phase) { g.strokeStyle = muted; g.lineWidth = 1; g.beginPath(); g.moveTo(X(this.t[k]), T); g.lineTo(X(this.t[k]), T + ph); g.stroke(); }
+    g.restore();
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// three.js stage (data frame z-up -> three.js y-up); per-system scenes are built into `world`
+// ---------------------------------------------------------------------------------------------------------------
+const canvas3 = document.getElementById("three");
+const renderer = new THREE.WebGLRenderer({ canvas: canvas3, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#f7f9fc");
+const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 200);
+const controls = new THREE.OrbitControls(camera, canvas3);
+controls.enableDamping = true;
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(3, 6, 4); scene.add(sun);
+let world = new THREE.Group(); scene.add(world);
+const BASIS = {                                           // v_three = B v_data (proper rotations)
+  zup: new THREE.Matrix3().set(1, 0, 0, 0, 0, 1, 0, -1, 0),
+};
+let basis = BASIS.zup;
+function m4(m3) {                                        // Matrix3 (column-major elements) -> Matrix4
+  const e = m3.elements;
+  return new THREE.Matrix4().set(e[0], e[3], e[6], 0, e[1], e[4], e[7], 0, e[2], e[5], e[8], 0, 0, 0, 0, 1);
+}
+const list = (values, d = 3) => Array.from(values, v => +(+v).toFixed(d)).join(", ");
+const V = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix3(basis);
+function quatThree(q) {                                   // data-frame quaternion (x, y, z, w) -> three.js orientation
+  const r = new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion(q[0], q[1], q[2], q[3]));
+  const b = m4(basis), bt = b.clone().transpose();
+  return new THREE.Quaternion().setFromRotationMatrix(b.multiply(r).multiply(bt));
+}
+function line(points, color, { dashed = false, opacity = 1 } = {}) {
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const material = dashed ? new THREE.LineDashedMaterial({ color, dashSize: 0.06, gapSize: 0.04, transparent: opacity < 1, opacity })
+                          : new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity });
+  const object = new THREE.Line(geometry, material);
+  if (dashed) object.computeLineDistances();
+  return object;
+}
+function dynamicLine(count, color, opacity = 1) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+  geometry.setDrawRange(0, 0);
+  return new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity }));
+}
+function setLine(object, pts) {                           // pts: array of [x, y, z] data-frame points (NaN skipped)
+  const attr = object.geometry.attributes.position; let n = 0;
+  for (const p of pts) { if (!isFinite(p[0]) || !isFinite(p[1]) || !isFinite(p[2])) continue; if (n >= attr.count) break; const v = V(p[0], p[1], p[2]); attr.setXYZ(n++, v.x, v.y, v.z); }
+  attr.needsUpdate = true; object.geometry.setDrawRange(0, n); object.geometry.computeBoundingSphere();
+}
+function pointsCloud(count, color, size) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+  const points = new THREE.Points(geometry, new THREE.PointsMaterial({ color, size, transparent: true, opacity: 0.7, sizeAttenuation: true }));
+  points.frustumCulled = false;                           // positions change every frame; the bounding sphere is never current
+  return points;
+}
+function ring(radius, color, plane, opacity = 0.35, centre = [0, 0, 0]) {
+  const pts = [];
+  for (let i = 0; i <= 96; i++) { const a = i / 96 * 2 * Math.PI, c = radius * Math.cos(a), s = radius * Math.sin(a);
+    const p = plane === "xy" ? [c, s, 0] : plane === "xz" ? [c, 0, s] : [0, c, s]; pts.push(V(p[0] + centre[0], p[1] + centre[1], p[2] + centre[2])); }
+  return line(pts, color, { opacity });
+}
+function floorGrid(centre, half, z, color = "#c9d4df") {
+  const group = new THREE.Group(), n = 8;
+  for (let i = 0; i <= n; i++) { const u = -1 + 2 * i / n;
+    group.add(line([V(centre[0] - half[0], centre[1] + u * half[1], z), V(centre[0] + half[0], centre[1] + u * half[1], z)], color, { opacity: 0.6 }));
+    group.add(line([V(centre[0] + u * half[0], centre[1] - half[1], z), V(centre[0] + u * half[0], centre[1] + half[1], z)], color, { opacity: 0.6 })); }
+  return group;
+}
+function resize() {
+  const w = canvas3.clientWidth, h = canvas3.clientHeight;
+  if (!w || !h) return;
+  const changed = Math.abs(camera.aspect - w / h) > 1e-3;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (changed && lastFit) fitCamera(...lastFit);
+}
+new ResizeObserver(resize).observe(canvas3);
+let lastFit = null;                                       // re-applied when the view changes size
+function fitCamera(target, halfWidth, halfHeight, direction) {    // whole scene in view at the canvas's aspect ratio
+  lastFit = [target, halfWidth, halfHeight, direction];
+  const aspect = (canvas3.clientWidth || 4) / (canvas3.clientHeight || 3), v = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const h = Math.atan(Math.tan(v) * aspect), distance = 1.2 * Math.max(halfWidth / Math.tan(h), halfHeight / Math.tan(v));
+  camera.position.copy(target).add(direction.clone().normalize().multiplyScalar(distance));
+  controls.target.copy(target); controls.update();
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// playback state
+// ---------------------------------------------------------------------------------------------------------------
+const state = { tab: "pendulum-swing", view: null, t: 0, playing: true, speed: 1, hidden: new Set() };
+const el = id => document.getElementById(id);
+const plotsBox = el("plots"), labelsBox = el("labels"), legendBox = el("legend");
+
+function clearView() {
+  scene.remove(world); world = new THREE.Group(); scene.add(world);
+  plotsBox.innerHTML = ""; labelsBox.innerHTML = ""; legendBox.innerHTML = ""; el("toggles").innerHTML = ""; el("case-fields").innerHTML = "";
+  el("readout").innerHTML = ""; el("paper").innerHTML = ""; el("notes").innerHTML = "";
+}
+function chipToggles(labels, names, colors, onChange) {
+  const box = el("toggles");
+  for (const label of labels) {
+    const chip = document.createElement("button");
+    chip.className = "check"; chip.setAttribute("aria-pressed", state.hidden.has(label) ? "false" : "true");
+    chip.innerHTML = `<i style="background:${colors[label]}"></i>`; chip.append(names[label]);
+    chip.addEventListener("click", () => { if (state.hidden.has(label)) state.hidden.delete(label); else state.hidden.add(label);
+      chip.setAttribute("aria-pressed", state.hidden.has(label) ? "false" : "true"); onChange(); });
+    box.appendChild(chip);
+  }
+}
+function selectField(label, id, options, value, onChange) {
+  const row = document.createElement("div"); row.className = "field";
+  const name = document.createElement("label"); name.htmlFor = id; name.textContent = label;
+  const select = document.createElement("select"); select.id = id;
+  options.forEach(([v, text]) => { const o = document.createElement("option"); o.value = v; o.textContent = text; select.appendChild(o); });
+  select.value = String(value); select.addEventListener("change", () => onChange(+select.value));
+  row.append(name, select); el("case-fields").appendChild(row);
+}
+function addButton(text, onClick) { const b = document.createElement("button"); b.className = "btn"; b.textContent = text; b.addEventListener("click", onClick); el("case-fields").appendChild(b); }
+function metricBlocks(columns, rows) {
+  // one block per row: the metric name, then one line per model (gold = best learned model)
+  return rows.map(row => {
+    const vals = columns.map(c => row.values[c.label]);
+    const finite = vals.map((v, i) => [Array.isArray(v) ? v[0] : v, i]).filter(([v, i]) => v !== null && v !== undefined && isFinite(v) && !columns[i].reference);
+    let best = -1;
+    if (row.better && finite.length > 1) best = finite.reduce((a, b) => (row.better === "low" ? b[0] < a[0] : b[0] > a[0]) ? b : a)[1];
+    return `<div class="metric"><div class="mname">${row.name}</div>` + columns.map((c, i) => {
+      const v = vals[i], text = Array.isArray(v) ? `${fmt(v[0], row.digits)} ± ${fmt(v[1], row.digits)}` : fmt(v, row.digits);
+      return `<div class="row${i === best ? " best" : ""}"><span><i class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color}"></i>${c.name}</span><b>${text}</b></div>`;
+    }).join("") + "</div>";
+  }).join("");
+}
+function scoreTable(columns, rows, caption) {
+  // columns: [{label, name, color, reference}], rows: [{name, values: {label: v}, better, digits}]; rows named
+  // "paper: ..." go to the collapsible paper table, the others to the readout of the selected run
+  const own = rows.filter(r => !r.name.startsWith("paper: ")), paper = rows.filter(r => r.name.startsWith("paper: ")).map(r => ({ ...r, name: r.name.slice(7) }));
+  el("readout").innerHTML = metricBlocks(columns, own) + `<div class="caption">${caption}</div>`;
+  el("paper").innerHTML = metricBlocks(columns, paper) + `<div class="caption spec">Mean ± std over all runs of the paper's test. Gold: best learned model.</div>`;
+}
+function notes(blocks) { el("notes").innerHTML = blocks.map(([title, body]) => `<div class="note"><h3>${title}</h3>${body}</div>`).join(""); }
+// wind-seed means (closed-loop tabs): elementwise mean over the seeds that are valid at that frame
+function seedMean(arrays, valid = () => true, stride = 1) {
+  const n = arrays[0].length, out = new Float32Array(n);
+  for (let j = 0; j < n; j++) { let sum = 0, count = 0; const i = Math.floor(j / stride);
+    arrays.forEach((a, s) => { const v = a[j]; if (isFinite(v) && valid(s, i)) { sum += v; count++; } });
+    out[j] = count ? sum / count : NaN; }
+  return out;
+}
+function meanStd(values) {                                // [mean, std] of the finite values, or null
+  const v = values.filter(x => x !== null && x !== undefined && isFinite(x));
+  if (!v.length) return null;
+  const m = v.reduce((a, b) => a + b, 0) / v.length;
+  return [m, v.length > 1 ? Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1)) : 0];
+}
+const SEED_OPTIONS = seeds => [[-1, "Mean"], ...[...Array(seeds).keys()].map(i => [i, String(i)])];
+function labelHTML(name, colour) {                         // "LieSPHGP (ours, best)" -> name, then the parenthetical below
+  const cut = name.indexOf(" (");
+  return `<b style="color:${colour}">${cut < 0 ? name : `${name.slice(0, cut)}<small>${name.slice(cut + 1)}</small>`}</b><span></span>`;
+}
+function placeLabel(tag, anchor, neighbour) {             // centred above the anchor, no wider than the gap to the neighbouring scene
+  const w = canvas3.clientWidth, h = canvas3.clientHeight, a = anchor.clone().project(camera), b = neighbour.clone().project(camera);
+  tag.style.left = `${(a.x + 1) / 2 * w}px`; tag.style.top = `${(1 - a.y) / 2 * h - 4}px`;
+  tag.style.maxWidth = `${Math.max(70, Math.abs(b.x - a.x) / 2 * w - 10)}px`;
+}
+function frameAt(view, t) { return Math.min(view.frames - 1, Math.max(0, t * view.fps)); }
+
+// ---------------------------------------------------------------------------------------------------------------
+// pendulum
+// ---------------------------------------------------------------------------------------------------------------
+function pendulumMeanFlight(block, start, l) {
+  // mean over the wind seeds of one start; the mean bob is put back on the sphere of radius l
+  const flights = [...Array(block.seeds).keys()].map(s => block.flights[start * block.seeds + s]), models = {};
+  for (const label of Object.keys(flights[0].models)) {
+    const all = flights.map(f => f.models[label]), mean = key => seedMean(all.map(m => m[key]));
+    const bob = mean("bob");
+    for (let i = 0; i < bob.length; i += 3) { const r = Math.hypot(bob[i], bob[i + 1], bob[i + 2]) / l; if (r > 0) { bob[i] /= r; bob[i + 1] /= r; bob[i + 2] /= r; } }
+    const scores = key => all.map(m => m.score[key]);
+    models[label] = { bob, theta: mean("theta"), theta_rate: mean("theta_rate"), H: mean("H"), euler: mean("euler"), euler_rate: mean("euler_rate"),
+      seeds: all.map(m => m.bob),
+      score: { final_angle: meanStd(scores("final_angle")), late_mean_angle: meanStd(scores("late_mean_angle")),
+               time_to_upright: meanStd(scores("time_to_upright")), reached: scores("time_to_upright").filter(v => v !== null).length } };
+  }
+  return { start, seed: -1, start_angle: flights[0].start_angle, models };
+}
+function pendulumView(data, mode) {
+  const l = data.params.l, names = { ...data.names, truth: "Ground truth (clean)" }, C = COLORS.pendulum;
+  const swing = mode === "swing_up", block = swing ? data.swing_up : data.open_loop;
+  const labels = swing ? ["Analytical", "Lie-PH-GP-SDE", "Lie-PH-NN-SDE", "PH-NODE"] : ["truth", "Lie-PH-GP-SDE", "Lie-PH-NN-SDE", "PH-NODE"];
+  const pick = state.pendulumCase || (state.pendulumCase = {});
+  if (swing && pick.start === undefined) { pick.start = block.default[0]; pick.seed = -1; }        // default: mean over the wind seeds
+  if (!swing && pick.trajectory === undefined) pick.trajectory = block.default;
+  const meanMode = swing && pick.seed < 0;
+  const item = !swing ? block.trajectories[pick.trajectory]
+             : meanMode ? pendulumMeanFlight(block, pick.start, l) : block.flights[pick.start * block.seeds + pick.seed];
+  const t = block.t, frames = t.length, spacing = 2.35 * l, offsets = labels.map((_, i) => (i - 1.5) * spacing);
+  basis = BASIS.zup;
+  el("sys-title").textContent = swing ? "3D windy pendulum: closed-loop swing-up controller with learned physics" : "3D windy pendulum: open-loop prediction against the simulator";
+  el("sys-spec").textContent = `m = ${data.params.m} kg, l = ${l} m, G = diag(${list(data.params.G)}), damping τ_D = c(1+|ω|)ω with c = ${data.params.damping_c}, wind σ = ${data.params.wind_sigma}; ` +
+    (swing ? `IDA-PBC on the true plant, ${block.controller.control_dt * 1000} ms control, |u| ≤ ${block.controller.U_max}` : `10 s from the clean state, recorded controls, observation noise ${block.noise}`);
+
+  // scene: one rig per model, side by side
+  const rigs = labels.map((label, i) => {
+    const x0 = offsets[i], group = new THREE.Group(), colour = C[label];
+    group.add(ring(l, "#b9c6d3", "xy", 0.6, [x0, 0, 0])); group.add(ring(l, "#b9c6d3", "xz", 0.45, [x0, 0, 0]));
+    const pivot = new THREE.Mesh(new THREE.SphereGeometry(0.035 * l, 12, 8), new THREE.MeshStandardMaterial({ color: "#5c6f82" }));
+    pivot.position.copy(V(x0, 0, 0)); group.add(pivot);
+    if (swing) { const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.06 * l), new THREE.MeshStandardMaterial({ color: "#f5b800", emissive: "#5a3b00" })); star.position.copy(V(x0, 0, l)); group.add(star);
+      group.add(line([V(x0, 0, 0), V(x0, 0, l)], "#c98a00", { dashed: true, opacity: 0.6 })); }
+    const rod = dynamicLine(2, "#3a4a5b"), trail = dynamicLine(frames, colour, meanMode ? 1 : 0.85);     // the whole path so far
+    const bob = new THREE.Mesh(new THREE.SphereGeometry(0.075 * l, 20, 14), new THREE.MeshStandardMaterial({ color: colour, roughness: 0.4 }));
+    group.add(rod, trail, bob);
+    const seedLines = meanMode ? item.models[label].seeds.map(() => dynamicLine(frames, colour, 0.22)) : [];   // the single seeds, faint
+    seedLines.forEach(x => group.add(x));
+    let ghost = null, cloud = null;
+    if (!swing && label !== "truth") {
+      ghost = { rod: dynamicLine(2, "#15202c", 0.25), bob: new THREE.Mesh(new THREE.SphereGeometry(0.06 * l, 16, 10), new THREE.MeshBasicMaterial({ color: "#15202c", transparent: true, opacity: 0.25 })) };
+      group.add(ghost.rod, ghost.bob);
+      if (item.models[label].samples) { cloud = pointsCloud(block.samples, colour, 0.045 * l); group.add(cloud); }
+    }
+    world.add(group);
+    const tag = document.createElement("div"); tag.className = "rig-label"; tag.innerHTML = labelHTML(names[label], colour); labelsBox.appendChild(tag);
+    return { label, x0, rod, trail, bob, ghost, cloud, seedLines, tag, value: tag.querySelector("span") };
+  });
+  fitCamera(V(0, 0, swing ? 0.1 * l : -0.3 * l), 1.5 * spacing + 1.1 * l, 1.25 * l, V(0, -1, 0.12));
+
+  // plots
+  const models = item.models, learned = labels.filter(x => x !== "Analytical" && x !== "truth");
+  const visible = list => list.filter(x => !state.hidden.has(x));
+  const plots = [];
+  let mainPhase, grid = [];
+  const axisNames = ["roll", "pitch", "yaw"];
+  if (swing) {
+    const angle = new Plot(plotsBox, { title: "angle to upright θ (rad)", xlabel: "time (s)", ylabel: "θ" });
+    const energy = new Plot(plotsBox, { title: "true energy H (J); upright needs H = m g l", xlabel: "time (s)", ylabel: "H" });
+    mainPhase = new Plot(plotsBox, { title: "phase map: θ vs θ̇ (target: θ = 0, θ̇ = 0)", xlabel: "θ (rad)", ylabel: "θ̇", phase: true });
+    angle.set(visible(labels).map(x => ({ y: models[x].theta, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.4 : 1.5, dash: x === "Analytical" })), { t, yr: [0, Math.PI] });
+    energy.set(visible(labels).map(x => ({ y: models[x].H, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.4 : 1.5, dash: x === "Analytical" })), { t, hlines: [{ y: block.upright_energy, color: "#a86400", label: "upright: m g l" }] });
+    mainPhase.set(visible(labels).map(x => ({ x: models[x].theta, y: models[x].theta_rate, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.2 : 1.4, dash: x === "Analytical" })));
+    plots.push(angle, energy, mainPhase);
+  } else {
+    const err = new Plot(plotsBox, { title: "bob position error (m); band: LieSPHGP 5-95 % of futures", xlabel: "time (s)", ylabel: "m" });
+    const energy = new Plot(plotsBox, { title: "energy error |E[H(x̂)] − H(x)| (J)", xlabel: "time (s)", ylabel: "J" });
+    const so3 = new Plot(plotsBox, { title: "SO(3) violation ‖RᵀR − I‖ (log; SDE models: worst future)", xlabel: "time (s)", ylabel: "", log: true });
+    mainPhase = new Plot(plotsBox, { title: "phase map: swing angle φ vs φ̇ (dashed: ground truth)", xlabel: "φ (rad)", ylabel: "φ̇", phase: true });
+    err.set(visible(learned).map(x => ({ y: models[x].bob_error, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.4 : 1.5, band: x === "Lie-PH-GP-SDE" ? models[x].band : null })), { t });
+    energy.set(visible(learned).map(x => ({ y: models[x].energy_error, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.4 : 1.5 })), { t });
+    so3.set(visible(learned).map(x => ({ y: models[x].orth, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.4 : 1.5 })), { t });
+    mainPhase.set(visible(labels).map(x => ({ x: models[x].swing, y: models[x].swing_rate, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.2 : 1.4, dash: x === "truth" })));
+    plots.push(err, energy, so3, mainPhase);
+  }
+  const gridBox = document.createElement("div"); gridBox.className = "grid3"; plotsBox.appendChild(gridBox);
+  axisNames.forEach((name, j) => {
+    const p = new Plot(gridBox, { title: `${name}: angle vs rate (click to enlarge)`, xlabel: `${name} (rad)`, ylabel: "rate", phase: true, small: true,
+      onClick: () => { mainPhase.set(visible(labels).map(x => ({ x: col(models[x].euler, 3, j), y: col(models[x].euler_rate, 3, j), color: C[x], width: 1.8, dash: x === "Analytical" || x === "truth" })));
+                       mainPhase.el.querySelector(".ptitle").textContent = `phase map: ${name} angle vs rate (Euler xyz, unwrapped)`; } });
+    p.set(visible(labels).map(x => ({ x: col(models[x].euler, 3, j), y: col(models[x].euler_rate, 3, j), color: C[x], width: 1.2, dash: x === "Analytical" || x === "truth" })));
+    grid.push(p);
+  });
+  plots.push(...grid);
+
+  // controls, legend, scores, notes
+  if (swing) {
+    selectField("Start", "pend-start", [...Array(block.starts).keys()].map(i => [i, `${i} (${fmt(block.flights[i * block.seeds].start_angle, 2)} rad from upright)`]), pick.start, v => { pick.start = v; rebuild(); });
+    selectField("Wind seed", "pend-seed", SEED_OPTIONS(block.seeds), pick.seed, v => { pick.seed = v; rebuild(); });
+    addButton("Paper figure", () => { pick.start = block.default[0]; pick.seed = block.default[1]; rebuild(); });
+  } else {
+    selectField("Test trajectory", "pend-traj", block.trajectories.map((_, i) => [i, String(i)]), pick.trajectory, v => { pick.trajectory = v; rebuild(); });
+  }
+  chipToggles(labels, names, C, rebuild);
+  if (!swing) legendBox.innerHTML = `<span>grey ghost = the true 3D pendulum</span><span>dots = ${block.samples} sampled futures (new wind each)</span>`;
+  if (meanMode) legendBox.innerHTML = `<span>bold = mean over the ${block.seeds} wind seeds</span><span>faint = each wind seed</span>`;
+  const columns = labels.map(x => ({ label: x, name: names[x], color: C[x], reference: x === "Analytical" || x === "truth" }));
+  if (swing) {
+    const pt = block.paper_table["0-10s"];
+    scoreTable(columns.filter(c => c.label !== "truth"), [
+      { name: "angle to upright at 10 s (rad)", values: Object.fromEntries(labels.map(x => [x, models[x].score.final_angle])), better: "low" },
+      { name: "time to reach θ < 0.1 rad (s)", values: Object.fromEntries(labels.map(x => [x, models[x].score.time_to_upright])), better: "low", digits: 2 },
+      { name: "mean θ over 5-10 s (rad)", values: Object.fromEntries(labels.map(x => [x, models[x].score.late_mean_angle])), better: "low" },
+      ...(meanMode ? [{ name: `wind seeds reaching θ < 0.1 rad (of ${block.seeds})`, values: Object.fromEntries(labels.map(x => [x, models[x].score.reached])), better: "high", digits: 0 }] : []),
+      { name: "paper: angle at 10 s, all 25 flights", values: Object.fromEntries(labels.map(x => [x, pt.att_final[x]])), better: "low" },
+      { name: "paper: success rate (%)", values: Object.fromEntries(labels.map(x => [x, pt.success[x]])), better: "high", digits: 0 },
+    ], (meanMode ? `Start ${pick.start}: mean ± std over its ${block.seeds} wind seeds (time to upright: over the seeds that reach it)`
+                 : `This flight (start ${pick.start}, wind seed ${pick.seed})`) + `, then the paper's mean ± std over all 5 starts × 5 wind seeds. Gold: best learned model.`);
+  } else {
+    const rows = [["bob position error (m)", "b_mean"], ["attitude error (rad)", "R_mean"], ["angular-velocity error (rad/s)", "w_mean"], ["energy error (J)", "H_mean"], ["rotation CRPS (rad)", "R_crps"], ["max ‖RᵀR − I‖", "orth_max"]];
+    scoreTable(columns.filter(c => c.label !== "truth"), [
+      ...rows.map(([name, key]) => ({ name: `${name}, this trajectory`, values: Object.fromEntries(learned.map(x => [x, models[x].score[key]])), better: "low" })),
+      ...rows.slice(0, 2).map(([name, key]) => ({ name: `paper: ${name}, 10 trajectories`, values: Object.fromEntries(learned.map(x => [x, block.paper_table[x][key]])), better: "low" })),
+    ], `Averaged over 0-10 s. Test trajectory ${pick.trajectory}, then the paper's mean ± std over the 10 test trajectories. Gold: best model.`);
+  }
+  notes([
+    ["The system", `<p>A rigid 3D pendulum on SO(3): attitude R, body rate ω, torque G u. Rate-dependent friction and a random wind force (an SDE) act on the bob. The learned models see only noisy R and ω (noise 0.5).</p>`],
+    ["The models", `<p><b>LieSPHGP</b>: port-Hamiltonian SDE whose M⁻¹, V, D, G are Gaussian processes, integrated with Lie-IMEX. <b>Lie-PH-NN-SDE</b>: the same with neural networks. <b>PH-NODE</b>: port-Hamiltonian neural ODE with RK4. <b>True physics</b>: the simulator's own equations.</p>`],
+    swing ? ["Swing-up test", `<p>Each model's learned physics builds an IDA-PBC energy-shaping controller that must lift the 3D pendulum to upright (gold star). The controller acts on the true windy plant. Under 0.2 % of training states lie within 30° of upright, so this tests extrapolation.</p>`]
+          : ["Open-loop test", `<p>From the clean state at t = 0 every model runs 10 s with the recorded controls and no feedback. SDE models draw 32 futures with new wind; their mean is the prediction. The SO(3) plot shows how far the integrated R drifts off the rotation group.</p>`],
+    ["Reading the phase maps", `<p>Each map plots an angle against its rate. ${swing ? "A successful swing-up spirals into θ = 0, θ̇ = 0." : "A good prediction follows the dashed ground-truth loop."} The three small maps show roll, pitch and yaw; click one to enlarge it.</p>`],
+  ]);
+  return {
+    fps: data.fps, frames, plots,
+    update(f) {
+      const k = Math.floor(f), a = f - k, k1 = Math.min(k + 1, frames - 1);
+      const at = (arr, i) => [arr[3 * i], arr[3 * i + 1], arr[3 * i + 2]];
+      const lerp = (arr) => { const p = at(arr, k), q = at(arr, k1); return p.map((v, i) => v + a * (q[i] - v)); };
+      const truthBob = swing ? null : lerp(models.truth.bob);
+      for (const rig of rigs) {
+        const m = models[rig.label], shown = !state.hidden.has(rig.label);
+        rig.bob.visible = rig.rod.visible = rig.trail.visible = shown;
+        const p = lerp(m.bob), x0 = rig.x0;
+        rig.bob.position.copy(V(p[0] + x0, p[1], p[2]));
+        setLine(rig.rod, [[x0, 0, 0], [p[0] + x0, p[1], p[2]]]);
+        const pts = []; for (let i = 0; i <= k; i++) { const q = at(m.bob, i); pts.push([q[0] + x0, q[1], q[2]]); }
+        setLine(rig.trail, pts);
+        rig.seedLines.forEach((seedLine, s) => { seedLine.visible = shown; const b = m.seeds[s], sp = [];
+          for (let i = 0; i <= k; i++) { const q = at(b, i); sp.push([q[0] + x0, q[1], q[2]]); } setLine(seedLine, sp); });
+        if (rig.ghost) { rig.ghost.bob.position.copy(V(truthBob[0] + x0, truthBob[1], truthBob[2])); setLine(rig.ghost.rod, [[x0, 0, 0], [truthBob[0] + x0, truthBob[1], truthBob[2]]]); }
+        if (rig.cloud) { rig.cloud.visible = shown; const s = m.samples, n = block.samples, attr = rig.cloud.geometry.attributes.position;
+          for (let j = 0; j < n; j++) { const base = (j * frames + k) * 3, v = V(s[base] + x0, s[base + 1], s[base + 2]); attr.setXYZ(j, v.x, v.y, v.z); } attr.needsUpdate = true; }
+        rig.value.textContent = swing ? `${meanMode ? "mean " : ""}θ = ${fmt(m.theta[k], 2)} rad` : (rig.label === "truth" ? "clean simulator" : `bob error ${fmt(m.bob_error[k], 2)} m`);
+        placeLabel(rig.tag, V(x0, 0, (swing ? 1.18 : 1.08) * l), V(x0 + spacing, 0, (swing ? 1.18 : 1.08) * l));
+      }
+      for (const p of plots) p.cursor(k);
+      return t[k];
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// quadrotor
+// ---------------------------------------------------------------------------------------------------------------
+function quadModel(arm, colour) {
+  const group = new THREE.Group(), dark = new THREE.MeshStandardMaterial({ color: "#1b2a3a", roughness: 0.6 });
+  for (const angle of [Math.PI / 4, -Math.PI / 4]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(2 * arm, 0.12 * arm, 0.12 * arm), dark); bar.rotation.z = angle; group.add(bar); }
+  for (const [sx, sy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) { const rotor = new THREE.Mesh(new THREE.TorusGeometry(0.42 * arm, 0.06 * arm, 8, 28), new THREE.MeshStandardMaterial({ color: colour, emissive: colour, emissiveIntensity: 0.25 }));
+    rotor.position.set(sx * arm / Math.SQRT2, sy * arm / Math.SQRT2, 0.08 * arm); group.add(rotor); }
+  group.add(new THREE.Mesh(new THREE.SphereGeometry(0.2 * arm, 12, 8), new THREE.MeshStandardMaterial({ color: colour })));
+  const holder = new THREE.Group();                       // body frame (data z-up) inside the three.js frame
+  holder.add(group); group.quaternion.copy(new THREE.Quaternion().setFromRotationMatrix(m4(BASIS.zup)));
+  return { holder, body: group };
+}
+const ESCAPE_M = 10;                                      // closed_loop.py: a flight > 10 m from the reference has failed
+function quadMeanFlight(data, reference) {
+  // mean over the wind seeds of one reference; a seed that has failed (non-finite or > 10 m away) leaves the mean
+  const flights = [...Array(data.seeds).keys()].map(s => data.flights[reference * data.seeds + s]), ref = data.references[reference], models = {};
+  for (const label of Object.keys(flights[0].models)) {
+    const all = flights.map(f => f.models[label]), valid = (s, i) => isFinite(all[s].error[i]) && all[s].error[i] <= ESCAPE_M;
+    const n = all[0].error.length, q = new Float32Array(4 * n), count = new Float32Array(n);
+    for (let i = 0; i < n; i++) {                                // quaternion mean: align signs to the first valid seed, average, normalise
+      let first = null, acc = [0, 0, 0, 0];
+      all.forEach((m, s) => { if (!valid(s, i)) return; const v = [m.q[4*i], m.q[4*i+1], m.q[4*i+2], m.q[4*i+3]]; if (!v.every(isFinite)) return;
+        if (!first) first = v; const sign = v.reduce((a, x, j) => a + x * first[j], 0) < 0 ? -1 : 1; acc = acc.map((x, j) => x + sign * v[j]); count[i]++; });
+      const r = Math.hypot(...acc); for (let j = 0; j < 4; j++) q[4*i + j] = r > 0 ? acc[j] / r : NaN;
+    }
+    const ev = all.map(m => { const out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = Math.hypot(m.v[3*i] - ref.v[3*i], m.v[3*i+1] - ref.v[3*i+1], m.v[3*i+2] - ref.v[3*i+2]); return out; });
+    const scores = key => all.map(m => m.score[key]);
+    models[label] = { p: seedMean(all.map(m => m.p), valid, 3), v: seedMean(all.map(m => m.v), valid, 3), q,
+      error: seedMean(all.map(m => m.error), valid), energy_error: seedMean(all.map(m => m.energy_error), valid), ev: seedMean(ev, valid),
+      seeds: all.map(m => m.p), count,
+      score: { p_rmse: meanStd(scores("p_rmse")), p_max: meanStd(scores("p_max")), energy_rmse: meanStd(scores("energy_rmse")),
+               lost: scores("lost_at").filter(v => v !== null).length } };
+  }
+  return { reference, seed: -1, models };
+}
+function quadrotorView(data) {
+  const C = COLORS.quadrotor, names = { ...data.names, reference: "Reference flight" }, labels = ["Analytical", "Lie-PH-GP-SDE", "PH-NODE"];
+  const pick = state.quadCase || (state.quadCase = { reference: data.default[0], seed: -1 });          // default: mean over the wind seeds
+  const meanMode = pick.seed < 0;
+  const flight = meanMode ? quadMeanFlight(data, pick.reference) : data.flights[pick.reference * data.seeds + pick.seed], ref = data.references[pick.reference];
+  const t = data.t, frames = t.length, models = flight.models;
+  basis = BASIS.zup;
+  el("sys-title").textContent = "Quadrotor: closed-loop tracking controller with learned physics";
+  el("sys-spec").textContent = `Crazyflie CF2P in PyBullet, m = ${data.params.mass} kg, rate-dependent damping, wind gusts every 10 ms; geometric controller at ${data.params.control_hz} Hz with K_p = (${list(data.params.gains.K_p)}), K_v = ${list([data.params.gains.K_v[0]])}, K_R = ${data.params.gains.K_R}, K_ω = ${data.params.gains.K_w}`;
+  const P = (arr, i) => [arr[3 * i], arr[3 * i + 1], arr[3 * i + 2]];
+  const refPts = []; for (let i = 0; i < frames; i++) refPts.push(P(ref.p, i));
+  const lo = [0, 1, 2].map(j => Math.min(...refPts.map(p => p[j]))), hi = [0, 1, 2].map(j => Math.max(...refPts.map(p => p[j])));
+  const centre = lo.map((v, j) => (v + hi[j]) / 2), half = lo.map((v, j) => Math.max(0.6 * (hi[j] - v) + 0.15, 0.4)), span = Math.max(...half);
+  // one environment per model, side by side along x (each its own reference, floor, target, vehicle and trail)
+  const spacing = 2 * half[0] + 0.5 * span, floorZ = lo[2] - 0.15 * span, arm = 0.075 * span;
+  const rigs = labels.map((label, i) => {
+    const dx = (i - (labels.length - 1) / 2) * spacing, c = [centre[0] + dx, centre[1], centre[2]], shift = p => [p[0] + dx, p[1], p[2]];
+    world.add(floorGrid(c, [half[0], half[1]], floorZ));
+    world.add(line(refPts.map(p => V(...shift(p))), C.reference, { dashed: true, opacity: 0.8 }));
+    world.add(line(refPts.map(p => V(p[0] + dx, p[1], floorZ)), "#b9c6d3", { opacity: 0.9 }));
+    const target = new THREE.Mesh(new THREE.SphereGeometry(0.035 * span, 12, 8), new THREE.MeshBasicMaterial({ color: "#15202c", transparent: true, opacity: 0.45 }));
+    const q = quadModel(arm, C[label]), trail = dynamicLine(frames, C[label], meanMode ? 1 : 0.9);     // the whole path flown so far
+    const seedLines = meanMode ? models[label].seeds.map(() => dynamicLine(frames, C[label], 0.22)) : [];   // the single seeds, faint
+    seedLines.forEach(x => world.add(x));
+    world.add(target, q.holder, trail);
+    const tag = document.createElement("div"); tag.className = "rig-label"; tag.innerHTML = labelHTML(names[label], C[label]); labelsBox.appendChild(tag);
+    return { label, dx, c, target, ...q, trail, seedLines, tag, value: tag.querySelector("span") };
+  });
+  const width = labels.length * spacing;
+  fitCamera(V(centre[0], centre[1], centre[2] - 0.1 * span), width / 2, 1.3 * span, V(0, -1, 0.5));
+  legendBox.innerHTML = `<span style="color:${C.reference}">- - reference (held-out, never trained on)</span><span>vehicles drawn ~${Math.round(arm / 0.0397)}× actual size</span>`;
+  if (meanMode) legendBox.innerHTML += `<span>bold = mean over the ${data.seeds} wind seeds · faint = each seed</span>`;
+
+  const visible = list => list.filter(x => !state.hidden.has(x));
+  const evel = label => { if (models[label].ev) return models[label].ev; const v = models[label].v, n = frames, out = new Float32Array(n); for (let i = 0; i < n; i++) out[i] = Math.hypot(v[3*i] - ref.v[3*i], v[3*i+1] - ref.v[3*i+1], v[3*i+2] - ref.v[3*i+2]); return out; };
+  const err = new Plot(plotsBox, { title: "position error to the reference (m)", xlabel: "time (s)", ylabel: "m" });
+  const energy = new Plot(plotsBox, { title: "true-energy error |H − H_ref| (J, log)", xlabel: "time (s)", ylabel: "", log: true });
+  const phase = new Plot(plotsBox, { title: "error phase map: |e_p| vs |e_v| (target: origin)", xlabel: "|e_p| (m)", ylabel: "|e_v| (m/s)", phase: true });
+  err.set(visible(labels).map(x => ({ y: models[x].error, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.4 : 1.5, dash: x === "Analytical" })), { t, hlines: [] });
+  energy.set(visible(labels).map(x => ({ y: models[x].energy_error, color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.2 : 1.3, dash: x === "Analytical" })), { t });
+  const ev = Object.fromEntries(labels.map(x => [x, evel(x)]));
+  phase.set(visible(labels).map(x => ({ x: models[x].error, y: ev[x], color: C[x], width: x === "Lie-PH-GP-SDE" ? 2.2 : 1.3, dash: x === "Analytical" })));
+  const gridBox = document.createElement("div"); gridBox.className = "grid3"; plotsBox.appendChild(gridBox);
+  const axes = ["x", "y", "z"], grid = axes.map((name, j) => {
+    const series = list => [{ x: col(ref.p, 3, j), y: col(ref.v, 3, j), color: C.reference, width: 1.2, dash: true }, ...visible(list).map(x => ({ x: col(models[x].p, 3, j), y: col(models[x].v, 3, j), color: C[x], width: 1.3 }))];
+    const p = new Plot(gridBox, { title: `${name} vs ${name}̇ (click to enlarge)`, xlabel: `${name} (m)`, ylabel: "m/s", phase: true, small: true,
+      onClick: () => { phase.set(series(labels).map(s => ({ ...s, width: s.width + 0.6 }))); phase.el.querySelector(".ptitle").textContent = `phase map: ${name} vs ${name}̇ (dashed: reference)`; } });
+    p.set(series(labels)); return p;
+  });
+  const plots = [err, energy, phase, ...grid];
+
+  selectField("Reference flight", "quad-ref", data.references.map((_, i) => [i, String(i)]), pick.reference, v => { pick.reference = v; rebuild(); });
+  selectField("Wind seed", "quad-seed", SEED_OPTIONS(data.seeds), pick.seed, v => { pick.seed = v; rebuild(); });
+  addButton("Video flight", () => { pick.reference = data.default[0]; pick.seed = data.default[1]; rebuild(); });
+  chipToggles(labels, names, C, rebuild);
+  const columns = labels.map(x => ({ label: x, name: names[x], color: C[x], reference: x === "Analytical" }));
+  const pt = data.paper_table;
+  scoreTable(columns, [
+    { name: "position RMSE, this flight (m)", values: Object.fromEntries(labels.map(x => [x, models[x].score.p_rmse])), better: "low" },
+    { name: "max position error, this flight (m)", values: Object.fromEntries(labels.map(x => [x, models[x].score.p_max])), better: "low" },
+    { name: "energy-error RMSE, this flight (J)", values: Object.fromEntries(labels.map(x => [x, models[x].score.energy_rmse])), better: "low" },
+    ...(meanMode ? [{ name: `wind seeds that failed (of ${data.seeds})`, values: Object.fromEntries(labels.map(x => [x, models[x].score.lost])), better: "low", digits: 0 }] : []),
+    { name: "paper: position RMSE (m)", values: pt.p_rmse, better: "low" },
+    { name: "paper: velocity RMSE (m/s)", values: pt.v_rmse, better: "low" },
+    { name: "paper: attitude RMSE (rad)", values: pt.att_cmd, better: "low" },
+    { name: "paper: energy RMSE (J)", values: pt.H_rmse, better: "low" },
+    { name: "paper: valid tracking time (s)", values: pt.valid, better: "high", digits: 2 },
+    { name: "paper: position CRPS (m)", values: pt.p_crps, better: "low" },
+  ], (meanMode ? `Reference ${pick.reference}: mean ± std over its ${data.seeds} wind seeds ("this flight" rows; failed seeds have no RMSE)` : `This flight (reference ${pick.reference}, wind seed ${pick.seed})`) + `, then the paper's table: mean ± std over 10 references × 5 wind seeds. Gold: best learned model.`);
+  notes([
+    ["The system", `<p>A Crazyflie quadrotor on SE(3) simulated in PyBullet with rate-dependent damping and random wind gusts. Training data: 300 noisy flights (observation noise 0.25). The flights shown here are held out.</p>`],
+    ["The test", `<p>One geometric tracking controller, with the same gains for every model, is built from each model's learned gravity, damping and control matrix. It then flies the true PyBullet plant along the reference with 5 wind seeds.</p>`],
+    ["The models", `<p><b>LieSPHGP</b>: port-Hamiltonian SDE with GP subnetworks and Lie-IMEX. <b>PH-NODE</b>: port-Hamiltonian neural ODE with RK4. <b>True physics</b>: the controller with the simulator's own parameters, the ceiling.</p>`],
+    ["Reading the phase maps", `<p>The large map plots position error against velocity error; good tracking stays near the origin. The three small maps show each axis's position against its velocity, with the reference dashed. Click one to enlarge it.</p>`],
+  ]);
+  return {
+    fps: data.fps, frames, plots,
+    update(f) {
+      const k = Math.floor(f), a = f - k, k1 = Math.min(k + 1, frames - 1);
+      const lerp = arr => P(arr, k).map((v, i) => v + a * (P(arr, k1)[i] - v));
+      const goal = lerp(ref.p);
+      const inside = p => p.every(isFinite) && p.every((v, j) => Math.abs(v - centre[j]) < 1.25 * half[j]);
+      for (const rig of rigs) {
+        const m = models[rig.label], p = lerp(m.p), q = [m.q[4 * k], m.q[4 * k + 1], m.q[4 * k + 2], m.q[4 * k + 3]];
+        const ok = inside(p) && q.every(isFinite), shown = !state.hidden.has(rig.label);
+        rig.target.position.copy(V(goal[0] + rig.dx, goal[1], goal[2]));
+        rig.holder.visible = ok && shown; rig.trail.visible = shown;
+        if (ok) { rig.holder.position.copy(V(p[0] + rig.dx, p[1], p[2])); rig.holder.quaternion.copy(quatThree(q)); }
+        const pts = []; for (let i = 0; i <= k; i++) { const pp = P(m.p, i); if (inside(pp)) pts.push([pp[0] + rig.dx, pp[1], pp[2]]); }
+        setLine(rig.trail, pts);
+        rig.seedLines.forEach((seedLine, s) => { seedLine.visible = shown; const sp = [];
+          for (let i = 0; i <= k; i++) { const pp = P(m.seeds[s], i); if (inside(pp)) sp.push([pp[0] + rig.dx, pp[1], pp[2]]); } setLine(seedLine, sp); });
+        rig.value.textContent = !ok ? "left the tracking volume"
+          : meanMode ? `mean error ${fmt(m.error[k], 2)} m` + (m.count[k] < data.seeds ? ` (${m.count[k]}/${data.seeds} seeds)` : "") : `position error ${fmt(m.error[k], 2)} m`;
+        placeLabel(rig.tag, V(rig.c[0], rig.c[1], centre[2] + 1.15 * half[2]), V(rig.c[0] + spacing, rig.c[1], centre[2] + 1.15 * half[2]));
+      }
+      for (const p of plots) p.cursor(k);
+      return t[k];
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// tabs, modes, playback
+// ---------------------------------------------------------------------------------------------------------------
+// tabs -> view and data file (both pendulum tabs read pendulum.json)
+const VIEWS = { "pendulum-swing": d => pendulumView(d, "swing_up"), "pendulum-open": d => pendulumView(d, "open_loop"),
+                quadrotor: quadrotorView };
+const DATA_FILE = { "pendulum-swing": "pendulum", "pendulum-open": "pendulum", quadrotor: "quadrotor" };
+function modesBar() { el("modes").hidden = true; }
+let buildToken = 0;
+// full-screen pop-up: the panel itself moves into the dialog (it keeps playing) and back on close
+let modalItem = null;
+function openModal(node, title) {
+  closeModal();
+  const placeholder = document.createComment("panel");
+  node.parentNode.insertBefore(placeholder, node);
+  el("modal-body").appendChild(node); node.classList.add("in-modal");
+  modalItem = { node, placeholder };
+  el("modal-title").textContent = title; el("modal-play").textContent = state.playing ? "Pause" : "Play";
+  el("modal").hidden = false; el("modal-close").focus();
+}
+function closeModal() {
+  if (!modalItem) return;
+  const { node, placeholder } = modalItem;
+  placeholder.parentNode.insertBefore(node, placeholder); placeholder.remove(); node.classList.remove("in-modal");
+  modalItem = null; el("modal").hidden = true;
+}
+el("modal-close").addEventListener("click", closeModal);
+el("modal").addEventListener("click", event => { if (event.target === el("modal")) closeModal(); });
+el("modal-play").addEventListener("click", () => { el("play").click(); el("modal-play").textContent = state.playing ? "Pause" : "Play"; });
+el("view-expand").addEventListener("click", () => openModal(el("view"), el("sys-title").textContent));
+async function rebuild(restart = false) {
+  closeModal();
+  const token = ++buildToken, tab = state.tab;
+  el("loading").hidden = !!cache[DATA_FILE[tab]];
+  let data;
+  try { data = await load(DATA_FILE[tab]); } catch (error) { el("loading").hidden = false; el("loading").textContent = `Could not load the data: ${error.message}`; return; }
+  if (token !== buildToken) return;
+  el("loading").hidden = true;
+  const keep = state.t;
+  clearView();
+  resize();                                               // the camera fit needs the current aspect ratio
+  state.view = VIEWS[tab](data);
+  el("scrub").max = String(state.view.frames - 1);
+  state.t = restart ? 0 : Math.min(keep, (state.view.frames - 1) / state.view.fps);
+  resize(); render(true);
+}
+function render(force = false) {
+  if (!state.view) return;
+  const f = frameAt(state.view, state.t), time = state.view.update(f);
+  el("clock").textContent = `t = ${time.toFixed(1)} s`;
+  if (modalItem) { el("modal-clock").textContent = `t = ${time.toFixed(1)} s`; el("modal-play").textContent = state.playing ? "Pause" : "Play"; }
+  el("scrub").value = String(Math.floor(f));
+  if (force) controls.update();
+  renderer.render(scene, camera);
+}
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (state.view && state.playing) {
+    state.t += dt * state.speed;
+    const end = (state.view.frames - 1) / state.view.fps;
+    if (state.t >= end) { state.t = end; state.playing = false; el("play").textContent = "Play"; }
+    render();
+  } else if (state.view) { controls.update(); renderer.render(scene, camera); if (state.view) state.view.update(frameAt(state.view, state.t)); }
+  requestAnimationFrame(loop);
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => selectTab(b.dataset.tab)));
+function selectTab(tab) {
+  state.tab = tab; state.hidden.clear();
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  try { history.replaceState(null, "", `#${tab}`); } catch (error) { /* the frame may refuse it */ }
+  modesBar(); rebuild(true);
+}
+el("play").addEventListener("click", () => {
+  if (!state.view) return;
+  const end = (state.view.frames - 1) / state.view.fps;
+  if (!state.playing && state.t >= end) state.t = 0;
+  state.playing = !state.playing; el("play").textContent = state.playing ? "Pause" : "Play";
+});
+el("restart").addEventListener("click", () => { state.t = 0; state.playing = true; el("play").textContent = "Pause"; render(); });
+el("scrub").addEventListener("input", () => { if (!state.view) return; state.t = +el("scrub").value / state.view.fps; render(); });
+el("speed").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+  state.speed = +b.dataset.speed; el("speed").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+}));
+document.addEventListener("keydown", event => { if (event.key === "Escape") closeModal(); });
+document.addEventListener("keydown", event => { if (event.code === "Space" && !["INPUT", "SELECT", "BUTTON"].includes(document.activeElement.tagName)) { event.preventDefault(); el("play").click(); } });
+if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { state.playing = false; el("play").textContent = "Play"; }
+const initial = (location.hash || "").replace("#", "");
+selectTab(VIEWS[initial] ? initial : "pendulum-swing");
+requestAnimationFrame(loop);
+</script>
+
+<script>
+(() => {   // teaser overlay: shown on the first visit, reopened from the top bar
+  const overlay = document.getElementById("teaser"), video = document.getElementById("teaser-video");
+  const play = document.getElementById("teaser-play"), seek = document.getElementById("teaser-seek"), clock = document.getElementById("teaser-time");
+  const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+  const toggle = () => { if (video.paused || video.ended) video.play().catch(() => {}); else video.pause(); };
+  video.addEventListener("click", toggle);
+  play.addEventListener("click", toggle);
+  video.addEventListener("play", () => { play.textContent = "Pause"; });
+  video.addEventListener("pause", () => { play.textContent = video.ended ? "Replay" : "Play"; });
+  video.addEventListener("timeupdate", () => {
+    const d = video.duration || 37;
+    seek.value = String(Math.round(1000 * video.currentTime / d));
+    clock.textContent = `${fmt(video.currentTime)} / ${fmt(d)}`;
+  });
+  seek.addEventListener("input", () => { video.currentTime = (Number(seek.value) / 1000) * (video.duration || 37); });
+  document.getElementById("teaser-full").addEventListener("click", () => {
+    const target = video.requestFullscreen ? video : null;
+    if (target) target.requestFullscreen().catch(() => {});
+  });
+  const open = () => { overlay.hidden = false; video.currentTime = 0; video.play().catch(() => {}); document.getElementById("teaser-close").focus(); };
+  const close = () => { overlay.hidden = true; video.pause(); try { localStorage.setItem("liesphgp-teaser-seen", "1"); } catch (e) {} };
+  document.getElementById("teaser-open").addEventListener("click", open);
+  document.getElementById("teaser-close").addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !overlay.hidden) { event.stopImmediatePropagation(); close(); } }, true);
+  let seen = false;
+  try { seen = localStorage.getItem("liesphgp-teaser-seen") === "1"; } catch (e) {}
+  if (!seen) open();
+})();
+</script>
