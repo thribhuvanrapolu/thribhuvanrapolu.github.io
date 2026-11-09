@@ -152,9 +152,9 @@ details > div { padding: 0 10px 10px; display: grid; gap: 10px; }
 <header class="topbar">
   <div class="brand"><b><a href="./" style="color:inherit;text-decoration:none" title="Back to the project page">&larr; LieSPHGP</a></b><span>stochastic port-Hamiltonian GPs on Lie groups · paper results, replayed</span></div>
   <nav class="tabs" role="tablist" aria-label="System">
-    <button role="tab" id="tab-pendulum-swing" data-tab="pendulum-swing" aria-selected="true">3D windy pendulum · SO(3) · Closed loop · Swing-up · Controller</button>
+    <button role="tab" id="tab-quadrotor" data-tab="quadrotor" aria-selected="true">Quadrotor · SE(3) · Closed loop · Tracking · Controller</button>
+    <button role="tab" id="tab-pendulum-swing" data-tab="pendulum-swing" aria-selected="false">3D windy pendulum · SO(3) · Closed loop · Swing-up · Controller</button>
     <button role="tab" id="tab-pendulum-open" data-tab="pendulum-open" aria-selected="false">3D windy pendulum · SO(3) · Open loop · Simulator</button>
-    <button role="tab" id="tab-quadrotor" data-tab="quadrotor" aria-selected="false">Quadrotor · SE(3) · Closed loop · Tracking · Controller</button>
   </nav>
   <button class="teaser-btn" id="teaser-open" type="button" aria-haspopup="dialog">▶ Teaser (37 s)</button>
 </header>
@@ -189,7 +189,7 @@ details > div { padding: 0 10px 10px; display: grid; gap: 10px; }
 
   <aside class="sidebar" aria-label="Controls">
     <section class="sys-head">
-      <h2 id="sys-title">3D windy pendulum</h2>
+      <h2 id="sys-title">Quadrotor</h2>
       <div class="spec" id="sys-spec"></div>
     </section>
     <div class="group" id="modes"></div>
@@ -446,7 +446,7 @@ function fitCamera(target, halfWidth, halfHeight, direction) {    // whole scene
 // ---------------------------------------------------------------------------------------------------------------
 // playback state
 // ---------------------------------------------------------------------------------------------------------------
-const state = { tab: "pendulum-swing", view: null, t: 0, playing: true, speed: 1, hidden: new Set() };
+const state = { tab: "quadrotor", view: null, t: 0, playing: true, speed: 1, hidden: new Set() };
 const el = id => document.getElementById(id);
 const plotsBox = el("plots"), labelsBox = el("labels"), legendBox = el("legend");
 
@@ -720,7 +720,7 @@ function quadMeanFlight(data, reference) {
 }
 function quadrotorView(data) {
   const C = COLORS.quadrotor, names = { ...data.names, reference: "Reference flight" }, labels = ["Analytical", "Lie-PH-GP-SDE", "PH-NODE"];
-  const pick = state.quadCase || (state.quadCase = { reference: data.default[0], seed: -1 });          // default: mean over the wind seeds
+  const pick = state.quadCase || (state.quadCase = { reference: 7, seed: -1 });          // default: reference 7, mean over the wind seeds ("Video flight" = data.default)
   const meanMode = pick.seed < 0;
   const flight = meanMode ? quadMeanFlight(data, pick.reference) : data.flights[pick.reference * data.seeds + pick.seed], ref = data.references[pick.reference];
   const t = data.t, frames = t.length, models = flight.models;
@@ -908,7 +908,7 @@ document.addEventListener("keydown", event => { if (event.key === "Escape") clos
 document.addEventListener("keydown", event => { if (event.code === "Space" && !["INPUT", "SELECT", "BUTTON"].includes(document.activeElement.tagName)) { event.preventDefault(); el("play").click(); } });
 if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { state.playing = false; el("play").textContent = "Play"; }
 const initial = (location.hash || "").replace("#", "");
-selectTab(VIEWS[initial] ? initial : "pendulum-swing");
+selectTab(VIEWS[initial] ? initial : "quadrotor");
 requestAnimationFrame(loop);
 </script>
 
