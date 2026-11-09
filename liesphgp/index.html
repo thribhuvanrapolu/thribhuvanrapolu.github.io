@@ -80,6 +80,10 @@ header.hero { text-align: center; padding: 64px 0 32px; }
 /* layout: one centred reading column (--narrow) for headings, text, tables and result figures; only the teaser,
    the two wide diagrams and the method cards use the wider --wide container (UI review, 6 Nov 2026) */
 .col { max-width: var(--narrow); margin: 0 auto; }
+.nutshell { margin: 0; padding-left: 1.4em; }
+.nutshell li { margin: 0 0 0.75em; padding-left: 0.2em; }
+.nutshell li::marker { font-family: var(--sans); font-weight: 600; color: var(--accent); }
+.nutshell b { font-family: var(--sans); }
 
 /* media */
 .teaser { margin: 36px auto 0; max-width: 960px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; }
@@ -187,6 +191,21 @@ footer { border-top: 1px solid var(--border); padding: 28px 0 40px; font-family:
 </header>
 
 <main>
+
+<section id="nutshell">
+  <div class="wrap"><div class="col">
+    <h2>In a Nutshell</h2>
+    <ol class="nutshell">
+      <li><b>Robots need a &ldquo;rule book&rdquo; for how they move.</b> To steer a drone, a pendulum or an underwater robot, a computer has to predict how it will respond to each push from its motors.</li>
+      <li><b>Writing that rule book by hand is hard.</b> Wind, water drag and friction are messy and hard to measure, so hand-written equations are never quite right.</li>
+      <li><b>So we learn it from recorded data, but the data is imperfect.</b> Sensors are noisy, some readings are missing, and gusts of wind push the robot at random.</li>
+      <li><b>Ordinary AI models learn the wrong lessons.</b> They can copy short clips of motion, but they break basic physics (for example, creating energy from nowhere), their small errors add up over time, and they trip over how 3D rotations work. Describing orientation with three angles fails at certain poses, a problem known as &ldquo;gimbal lock&rdquo;.</li>
+      <li><b>They also don&rsquo;t say how sure they are.</b> A controller can&rsquo;t tell when to trust the prediction and when to be careful.</li>
+      <li><b>Our approach builds physics into the learning.</b> The model keeps track of energy, makes friction only ever remove energy, and keeps rotations valid. It learns only the unknown parts, and gives an error bar on each prediction.</li>
+      <li><b>The result is a model good enough to control the real thing.</b> The same controller swings a pendulum upright and flies a quadrotor through wind using our learned model, nearly as well as with the true physics.</li>
+    </ol>
+  </div></div>
+</section>
 
 <section id="abstract">
   <div class="wrap"><div class="col">
